@@ -12,7 +12,6 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = ">=1.8.0"
   s.required_ruby_version = Gem::Requirement.new(">= 1.9.2")
-  s.executables = ["log_switch"]
   s.files = Dir.glob("{bin,features,lib,spec,tasks}/**/*") + Dir.glob("*.rdoc") +
     %w(.gemtest Gemfile log_switch.gemspec Rakefile)
   s.test_files = Dir.glob("{features,spec}/**/*")
