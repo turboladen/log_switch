@@ -1,0 +1,36 @@
+= log_switch
+
+http://github.com/turboladen/log_switch
+
+== DESCRIPTION
+
+FIX (briefly describe your package)
+
+== FEATURES/PROBLEMS
+
+Features:
+
+* FIX (list your features)
+
+== SYNOPSIS
+
+FIX (explain how to use, etc)
+
+== REQUIREMENTS
+
+* Ruby 1.9.2
+* RubyGems:
+  * None!
+
+== INSTALL
+
+  $ gem install log_switch
+
+== DEVELOPERS
+
+After checking out the source, run:
+
+  $ bundle install
+
+  This task will install any missing dependencies for you.
+
