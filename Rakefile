@@ -5,8 +5,6 @@ require 'yard'
 # Load all extra rake task definitions
 Dir["#{File.dirname(__FILE__)}/tasks/*.rake"].each { |ext| load ext }
 
-task default: :install
-
 YARD::Rake::YardocTask.new do |t|
   t.files = %w(lib/**/*.rb - History.rdoc)
   t.options = %w(--title log_switch Documentation (#{LogSwitch::VERSION}))
@@ -17,4 +15,6 @@ RSpec::Core::RakeTask.new
 
 # Alias for rubygems-test
 task test: :spec
+
+task default: :install
 
