@@ -1,7 +1,9 @@
 require_relative 'log_switch/version'
 require "logger"
 
-# FIX Document me!
+# LogSwitch allows for extending a class/module with a logger and, most
+# importantly, allows for turning off logging programmatically.  See the
+# +README.rdoc+ for more info.
 module LogSwitch
 
   # Use to turn logging on or off.
@@ -30,7 +32,17 @@ module LogSwitch
 
   # Logs a message using the level provided.  If no level provided, use
   # +@log_level+.
+  #
+  # @param [String] message The message to log.
+  # @param [Symbol] level The log level to send to your Logger.
   def log(message, level=log_level)
     message.each_line { |line| logger.send level, line.chomp if log? }
+  end
+
+  # Sets back to defaults.
+  def reset_config!
+    self.log = true
+    self.logger = ::Logger.new STDOUT
+    self.log_level = :debug
   end
 end
