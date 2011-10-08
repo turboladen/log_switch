@@ -4,17 +4,62 @@ http://github.com/turboladen/log_switch
 
 == DESCRIPTION
 
-FIX (briefly describe your package)
+While developing other gems that required a single class/singleton style logger,
+I got tired of repeating the code to create that logger and mix it in to my base
+class.  I just wanted to be able to require something, then be able to do:
+
+  MyLib.log "some message"
+
+I also wanted to be able to programmatically turn on/off logging by doing something
+like:
+
+  MyLib.log = false
+
+This gem allows just that.  Well, almost...
 
 == FEATURES/PROBLEMS
 
 Features:
 
-* FIX (list your features)
+* +require+ and +extend+ to mix in to your class/module to get a single point of logging
+* Switch on/off logging
+* Use whatever Logger you want
 
 == SYNOPSIS
 
-FIX (explain how to use, etc)
+Get your app logging with a single point of logging:
+
+  require 'log_switch'
+
+  class MyThing
+    extend LogSwitch
+  end
+
+  MyThing.log "I like you, Ruby."  # => D, [2011-10-07T14:40:26.697084 #30080] DEBUG -- : I like you, Ruby.
+
+...and then you can simply switch off logging by doing:
+
+  MyThing.log = false
+  MyThing.log "You're my favorite." # => No logging occurs!
+
+By default, LogSwitch sets the log level to :debug.  You can change the default
+log level as you go:
+
+  MyThing.log_level = :warn
+  MyThing.log "Crap!"           # => W, [2011-10-07T15:30:54.012502 #32892]  WARN -- : Crap!
+
+You can pass in the log level for your Logger type too:
+
+  MyThing.log "Stuff!", :info      # => I, [2011-10-07T15:28:49.480741 #32892]  INFO -- : Stuff!
+  MyThing.log "Meow", :fatal       # => F, [2011-10-07T15:32:21.207867 #32892] FATAL -- : Meow
+
+If you have another Logger object you want to write to, no problem:
+
+  some_other_logger = Logger.new 'log.txt'
+  MyThing.logger = some_other_logger
+  MyThing.log "hi!"
+  File.open('log.txt', 'r').read    # => Logfile created on 2011-10-07 15:50:19 -0700 by logger.rb/25413
+                                    #    D, [2011-10-07T15:51:16.385798 #34026] DEBUG -- : hi!
 
 == REQUIREMENTS
 
@@ -33,4 +78,10 @@ After checking out the source, run:
   $ bundle install
 
 This task will install any missing dependencies for you.
+
+== THANKS
+
+I need to thank the http://github.com/rubiii/savon project for most of the code
+here.  Somehow I ran across how they do logging and started following suit.  The
+code in +log_switch+ is almost identical to Savon's logging.
 
