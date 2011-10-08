@@ -14,7 +14,6 @@ MetricFu::Configuration.run do |config|
   config.graphs   = [
                       :flog,
                       :flay,
-                      :hotspots,
                       :rcov,
                       :reek,
                       :roodi,
