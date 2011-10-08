@@ -1,4 +1,7 @@
-=== 0.0.1 / 2011-10-07
+=== 0.1.0 / 2011-10-07
 
-* FIX
+* Features:
+  * +require+ and +extend+ to mix in to your class/module to get a single point of logging
+  * Switch on/off logging
+  * Use whatever Logger you want
 
