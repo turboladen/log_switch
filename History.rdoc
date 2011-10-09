@@ -1,4 +1,8 @@
-=== 0.1.1 / 2011-01-09
+=== 0.1.2 / 2011-10-09
+
+* Just realized author is supposed to be my real name.  :)
+
+=== 0.1.1 / 2011-10-09
 
 * Fixed author field in .gemspec
 
