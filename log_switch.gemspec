@@ -4,7 +4,7 @@ require 'log_switch/version'
 Gem::Specification.new do |s|
   s.name = "log_switch"
   s.version = LogSwitch::VERSION
-  s.authors = %w("Steve Loveless")
+  s.authors = %w(turboladen)
   s.homepage = %q(http://github.com/turboladen/log_switch)
   s.email = %w(steve.loveless@gmail.com)
   s.summary = %q(Extends a class for singleton style logging that can easily be turned on and off.)
