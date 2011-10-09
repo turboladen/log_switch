@@ -1,3 +1,7 @@
+=== 0.1.1 / 2011-01-09
+
+* Fixed author field in .gemspec
+
 === 0.1.0 / 2011-10-07
 
 * Features:
