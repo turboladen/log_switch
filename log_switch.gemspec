@@ -11,7 +11,6 @@ Gem::Specification.new do |s|
   s.description = %q(Extends a class for singleton style logging that can easily be turned on and off.)
 
   s.required_rubygems_version = ">=1.8.0"
-  s.required_ruby_version = Gem::Requirement.new(">= 1.9.2")
   s.files = Dir.glob("{bin,features,lib,spec}/**/*") + Dir.glob("*.rdoc") +
     %w(.gemtest Gemfile log_switch.gemspec Rakefile)
   s.test_files = Dir.glob("{features,spec}/**/*")
