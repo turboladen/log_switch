@@ -23,7 +23,7 @@ describe "LogSwitch" do
     MyClass.reset_config!
   end
 
-  it { LogSwitch::VERSION.should == '0.1.2' }
+  it { LogSwitch::VERSION.should == '0.1.3' }
 
   describe "log" do
     it "should default to true" do
