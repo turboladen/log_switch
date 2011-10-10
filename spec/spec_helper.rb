@@ -1,17 +1,19 @@
-require 'simplecov'
-require 'simplecov-rcov-text'
+if RUBY_VERSION > '1.9'
+  require 'simplecov'
+  require 'simplecov-rcov-text'
 
-class SimpleCov::Formatter::MergedFormatter
-  def format(result)
-    SimpleCov::Formatter::HTMLFormatter.new.format(result)
-    SimpleCov::Formatter::RcovTextFormatter.new.format(result)
+  class SimpleCov::Formatter::MergedFormatter
+    def format(result)
+      SimpleCov::Formatter::HTMLFormatter.new.format(result)
+      SimpleCov::Formatter::RcovTextFormatter.new.format(result)
+    end
   end
-end
 
-SimpleCov.formatter = SimpleCov::Formatter::MergedFormatter
+  SimpleCov.formatter = SimpleCov::Formatter::MergedFormatter
 
-SimpleCov.start do
-  add_filter "/spec"
+  SimpleCov.start do
+    add_filter "/spec"
+  end
 end
 
 $:.unshift(File.dirname(__FILE__) + '/../lib')

@@ -63,7 +63,13 @@ If you have another Logger object you want to write to, no problem:
 
 == REQUIREMENTS
 
-* Ruby 1.9.2
+* Rubies (tested):
+  * MRI 1.9.3-rc1
+  * MRI 1.9.2
+  * MRI 1.8.7
+  * ree 1.8.7-2011.03
+  * JRuby 1.6.4
+  * Rubinius 1.2.4
 * RubyGems:
   * None!
 

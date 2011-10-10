@@ -1,4 +1,4 @@
-require_relative 'spec_helper'
+require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 describe Kernel do
   def self.get_requires

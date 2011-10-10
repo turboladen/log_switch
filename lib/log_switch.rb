@@ -1,4 +1,4 @@
-require_relative 'log_switch/version'
+require File.expand_path(File.dirname(__FILE__) + '/log_switch/version')
 require "logger"
 
 # LogSwitch allows for extending a class/module with a logger and, most

@@ -14,7 +14,7 @@ end
 RSpec::Core::RakeTask.new
 
 # Alias for rubygems-test
-task test: :spec
+task :test => :spec
 
-task default: :install
+task :default => :install
 
