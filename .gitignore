@@ -15,5 +15,5 @@ doc
 pkg
 log_switch*.gem
 
-# metric_fu
-tmp
+# Rubinius
+.rbx
