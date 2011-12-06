@@ -27,6 +27,8 @@ Features:
 
 == SYNOPSIS
 
+=== Basic Use
+
 Get your app logging with a single point of logging:
 
   require 'log_switch'
@@ -61,10 +63,46 @@ If you have another Logger object you want to write to, no problem:
   File.open('log.txt', 'r').read    # => Logfile created on 2011-10-07 15:50:19 -0700 by logger.rb/25413
                                     #    D, [2011-10-07T15:51:16.385798 #34026] DEBUG -- : hi!
 
+=== Hooks
+
+You can also make sure code gets executed before each call to +.log+.  While
+this really only makes sense when you're logging from multiple places and/or
+you're not sure when the first call to your logger will occur (unlike this
+example), say you want to makes sure your log directory exists before trying
+to write the log file to it:
+
+  log_directory = File.expand_path('my_log_dir')
+
+  MyThing.before do
+    FileUtils.mkdir_p(full_directory) unless Dir.exists? log_directory
+  end
+
+  log_file = log_directory + "/sweet_log_bro.txt"
+  MyThing.logger = Logger.new(log_file)
+  MyThing.log "Thanks brah!"            # This calls the #before hook, thus
+                                        # creating the directory.
+  MyThing.log "I'm hungry..."           # This also calls the #before hook...
+
+You might just want want a one-time before hook--in that case, +.log+ will call
+a plain old block that you pass to it, right before writing to the log file.
+Here's the above example, using the one-timer:
+
+  log_directory = File.expand_path('my_log_dir')
+
+  log_file = log_directory + "/sweet_log_bro.txt"
+  MyThing.logger = Logger.new(log_file)
+
+  MyThing.log("Thanks brah!") do
+    FileUtils.mkdir_p(full_directory) unless Dir.exists? log_directory
+  end
+
+  # No block gets called here (assuming the +#before+ hook from above hasn't been defined)
+  MyThing.log "I'm hungry..."
+
 == REQUIREMENTS
 
 * Rubies (tested):
-  * MRI 1.9.3-rc1
+  * MRI 1.9.3
   * MRI 1.9.2
   * MRI 1.8.7
   * ree 1.8.7-2011.03

@@ -25,7 +25,7 @@ describe "LogSwitch" do
 
   it { LogSwitch::VERSION.should == '0.1.4' }
 
-  describe "log" do
+  describe ".log" do
     it "should default to true" do
       MyClass.log?.should be_true
     end
@@ -40,22 +40,35 @@ describe "LogSwitch" do
     it "raises when log_level isn't a Symbol" do
       expect { MyClass.log("stuff", "meow") }.to raise_error NoMethodError
     end
+
+    it "can take a block" do
+      $stdout.should_receive(:puts).with("This is before")
+      MyClass.log('hi') { puts "This is before" }
+    end
+
+    context "with .before" do
+      it "calls the @before_block if that's set" do
+        MyClass.before { puts "This is also before" }
+        MyClass.instance_variable_get(:@before_block).should_receive(:call).once
+        MyClass.log 'hi'
+      end
+    end
   end
 
-  describe "log=" do
+  describe ".log=" do
     it "allows to set logging to false" do
       MyClass.log = false
       MyClass.log?.should be_false
     end
   end
 
-  describe "logger" do
+  describe ".logger" do
     it "is a Logger by default" do
       MyClass.logger.should be_a Logger
     end
   end
 
-  describe "logger=" do
+  describe ".logger=" do
     it "allows to set to use another logger" do
       original_logger = MyClass.logger
       another_logger = Logger.new nil
@@ -64,19 +77,26 @@ describe "LogSwitch" do
     end
   end
 
-  describe "log_level" do
+  describe ".log_level" do
     it "defaults to :debug" do
       MyClass.log_level.should == :debug
     end
   end
 
-  describe "log_level=" do
+  describe ".log_level=" do
     it "changes the level that #log(msg, level=) uses" do
       MyClass.logger.should_receive(:debug)
       MyClass.log("testing...")
       MyClass.log_level = :info
       MyClass.logger.should_receive(:info)
       MyClass.log("testing...")
+    end
+  end
+
+  describe ".before" do
+    it "assigns the given block to @before_block" do
+      MyClass.before { "I'm a block" }
+      MyClass.instance_variable_get(:@before_block).should be_a Proc
     end
   end
 end
