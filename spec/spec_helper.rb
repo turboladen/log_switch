@@ -1,11 +1,9 @@
 if RUBY_VERSION > '1.9'
   require 'simplecov'
-  require 'simplecov-rcov-text'
 
   class SimpleCov::Formatter::MergedFormatter
     def format(result)
       SimpleCov::Formatter::HTMLFormatter.new.format(result)
-      SimpleCov::Formatter::RcovTextFormatter.new.format(result)
     end
   end
 
