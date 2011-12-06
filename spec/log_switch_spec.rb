@@ -53,6 +53,20 @@ describe "LogSwitch" do
         MyClass.log 'hi'
       end
     end
+
+    context "can log non-String objects" do
+      it "an Array of various object types" do
+        array = [1, 'stuff', { :two => 2 }]
+        MyClass.logger.should_receive(:send).with(:debug, array)
+        expect { MyClass.log array }.to_not raise_exception
+      end
+
+      it "an Exception" do
+        ex = StandardError.new("Test error.")
+        MyClass.logger.should_receive(:send).with(:debug, ex)
+        expect { MyClass.log ex }.to_not raise_exception
+      end
+    end
   end
 
   describe ".log=" do

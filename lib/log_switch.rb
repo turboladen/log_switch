@@ -49,7 +49,14 @@ module LogSwitch
   def log(message, level=log_level)
     @before_block.call unless @before_block.nil?
     yield if block_given?
-    message.each_line { |line| logger.send level, line.chomp if log? }
+
+    if log?
+      if message.respond_to? :each_line
+        message.each_line { |line| logger.send level, line.chomp }
+      else
+        logger.send(level, message)
+      end
+    end
   end
 
   # Sets back to defaults.
