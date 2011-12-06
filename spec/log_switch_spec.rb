@@ -42,8 +42,11 @@ describe "LogSwitch" do
     end
 
     it "can take a block" do
-      $stdout.should_receive(:puts).with("This is before")
-      MyClass.log('hi') { puts "This is before" }
+      object = Object.new
+      object.stub :test_in_block
+      object.should_receive(:test_in_block)
+
+      MyClass.log('hi') { object.test_in_block }
     end
 
     context "with .before" do
