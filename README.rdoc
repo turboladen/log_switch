@@ -106,7 +106,7 @@ Here's the above example, using the one-timer:
   * MRI 1.9.2
   * MRI 1.8.7
   * ree 1.8.7-2011.03
-  * JRuby 1.6.4
+  * JRuby 1.6.5
   * Rubinius 1.2.4
 * RubyGems:
   * None!
