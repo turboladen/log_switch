@@ -3,6 +3,9 @@
 * Added ability to pass a block to +.log+ to have code executed before logging.
 * Added +before+ hook to allow code to be executed every time log gets called
   (but before the message actually gets logged).
+* Bug fixes
+  * gh-1[https://github.com/turboladen/log_switch/issues/1]: Only log #each_line
+    when that method is supported on the object being logged.
 
 === 0.1.4 / 2011-10-10
 
