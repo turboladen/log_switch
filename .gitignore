@@ -17,3 +17,6 @@ log_switch*.gem
 
 # Rubinius
 .rbx
+
+# IDE files
+.idea/
