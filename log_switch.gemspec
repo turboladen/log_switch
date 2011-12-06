@@ -21,7 +21,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency("rspec", ["~> 2.6.0"])
   if RUBY_VERSION > '1.9'
     s.add_development_dependency("simplecov", [">= 0"])
-    s.add_development_dependency("simplecov-rcov-text", [">= 0"])
   end
   s.add_development_dependency("yard", [">= 0.7.2"])
 end
