@@ -11,7 +11,9 @@ YARD::Rake::YardocTask.new do |t|
   t.options += %w(--main README.rdoc)
 end
 
-RSpec::Core::RakeTask.new
+RSpec::Core::RakeTask.new do |t|
+  t.ruby_opts = %w(-w)
+end
 
 # Alias for rubygems-test
 task :test => :spec
