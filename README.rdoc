@@ -44,7 +44,7 @@ Get your app logging with a single point of logging:
   MyThing.log = false
   MyThing.log "You're my favorite." # => No logging occurs!
 
-By default, LogSwitch sets the log level to :debug.  You can change the default
+By default, LogSwitch sets the log level to +:debug+.  You can change the default
 log level as you go:
 
   MyThing.log_level = :warn
