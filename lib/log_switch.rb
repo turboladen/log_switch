@@ -1,10 +1,20 @@
-require File.expand_path(File.dirname(__FILE__) + '/log_switch/version')
 require "logger"
+require File.expand_path(File.dirname(__FILE__) + '/log_switch/version')
+require File.expand_path(File.dirname(__FILE__) + '/log_switch/mixin')
 
 # LogSwitch allows for extending a class/module with a logger and, most
 # importantly, allows for turning off logging programmatically.  See the
 # +README.rdoc+ for more info.
 module LogSwitch
+
+  def self.extend_object(base)
+    @extender = base
+    super(base)
+  end
+
+  def self.extender
+    @extender
+  end
 
   # Use to turn logging on or off.
   attr_writer :log
@@ -30,13 +40,13 @@ module LogSwitch
     @log_level ||= :debug
   end
 
-  # +#log+ calls the block given to this method before it logs every time.
+  # {#log} calls the block given to this method before it logs every time.
   # This, thus, acts as a hook in the case where you want to make sure some
   # code gets executed before you log a message.  Useful for making sure a file
   # exists before logging to it.
   #
   # @param [Proc] block The block of code to execute before logging a message
-  #   with +#log+.
+  #   with {#log}.
   def before(&block)
     @before_block ||= block
   end
