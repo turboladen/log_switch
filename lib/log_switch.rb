@@ -15,7 +15,7 @@ module LogSwitch
   end
 
   # Simply returns the name of the class that extended itself with this module.
-  # It's set by {self.extend_object}.
+  # It's set by {.extend_object}.
   #
   # @return [Class] The class that extended itself with LogSwitch.
   def self.extender
