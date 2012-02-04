@@ -47,6 +47,8 @@ describe "LogSwitch" do
       object.should_receive(:test_in_block)
 
       MyClass.log('hi') { object.test_in_block }
+
+      object.unstub :test_in_block
     end
 
     context "with .before" do
