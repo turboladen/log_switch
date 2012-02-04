@@ -7,11 +7,17 @@ require File.expand_path(File.dirname(__FILE__) + '/log_switch/mixin')
 # +README.rdoc+ for more info.
 module LogSwitch
 
+  # Saves the name of the class that extended itself with this module.  Used
+  # by {LogSwitch::Mixin} to know which class to include itself to.
   def self.extend_object(base)
     @extender = base
     super(base)
   end
 
+  # Simply returns the name of the class that extended itself with this module.
+  # It's set by {self.extend_object}.
+  #
+  # @return [Class] The class that extended itself with LogSwitch.
   def self.extender
     @extender
   end
