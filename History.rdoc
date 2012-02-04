@@ -1,3 +1,13 @@
+=== 0.3.0 / 2012-02-03
+
+* Improvements:
+  * gh-2[https://github.com/turboladen/log_switch/issues/2]: Added ability to
+    mix in {LogSwitch::Mixin} to classes to allow calling +#log+ in your class
+    and have it delegate to your singleton logger.
+* Bug fixes:
+  * gh-3[https://github.com/turboladen/log_switch/issues/3]: Fixed warning on
+    +@before_block+.
+
 === 0.2.0 / 2011-12-05
 
 * Added ability to pass a block to +.log+ to have code executed before logging.
