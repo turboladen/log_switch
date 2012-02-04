@@ -99,6 +99,39 @@ Here's the above example, using the one-timer:
   # No block gets called here (assuming the +#before+ hook from above hasn't been defined)
   MyThing.log "I'm hungry..."
 
+=== Mixin for lazy people like me
+
+All that stuff above describes how you can extend some class of yours to make it
+a singleton logger (well, not that you can't have it do other stuff too...).  If
+you're using this in a sizeable project, however, it can get tiresome typing out
+<tt>MyThing.log "message"</tt> over and over again; for me, it's usually more
+like <tt>MyThing::Logger.log "message"</tt>.  The {LogSwitch::Mixin} mixin
+lets you shorten things up.
+
+If you've extended {LogSwitch} into a class...
+
+  class MyThing
+    class Logger
+      extend LogSwitch
+    end
+  end
+
+...then you can mix in {LogSwitch::Mixin} to your other classes that you want to
+use +MyThing::Logger.log+:
+
+  class MyThing
+    class WidgetMaker
+      include LogSwitch::Mixin
+
+      def make_widget
+        log "Making widget...", :info    # This will delegate to MyThing::Logger.log
+      end
+    end
+  end
+
+This lets you still use a single logger throughout your classes, but shortens
+the amount of typing you have to do.
+
 == REQUIREMENTS
 
 * Rubies (tested):
