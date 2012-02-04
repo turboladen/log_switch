@@ -38,7 +38,7 @@ module LogSwitch
   # @param [Proc] block The block of code to execute before logging a message
   #   with +#log+.
   def before(&block)
-    @before_block = block
+    @before_block ||= block
   end
 
   # Logs a message using the level provided.  If no level provided, use
@@ -47,7 +47,7 @@ module LogSwitch
   # @param [String] message The message to log.
   # @param [Symbol] level The log level to send to your Logger.
   def log(message, level=log_level)
-    @before_block.call unless @before_block.nil?
+    before.call unless before.nil?
     yield if block_given?
 
     if log?
