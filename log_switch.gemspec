@@ -7,8 +7,10 @@ Gem::Specification.new do |s|
   s.authors = ["Steve Loveless"]
   s.homepage = %q(http://github.com/turboladen/log_switch)
   s.email = %w(steve.loveless@gmail.com)
-  s.summary = %q(Extends a class for singleton style logging that can easily be turned on and off.)
-  s.description = %q(Extends a class for singleton style logging that can easily be turned on and off.)
+  s.summary = %q(Extends a class for singleton style logging that can easily be
+                 turned on and off.)
+  s.description = %q(Extends a class for singleton style logging that can 
+                     easily be turned on and off.)
 
   s.required_rubygems_version = ">=1.8.0"
   s.files = Dir.glob("{lib,spec}/**/*") + Dir.glob("*.rdoc") +
