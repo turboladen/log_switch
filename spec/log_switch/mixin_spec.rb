@@ -28,7 +28,11 @@ describe LogSwitch::Mixin do
           include LogSwitch::Mixin
         end
 
-        Tester.new.methods.should include(:log)
+        if RUBY_VERSION < "1.9"
+          Tester.new.methods.should include("log")
+        else
+          Tester.new.methods.should include(:log)
+        end
       end
 
       context "LogSwitch.extender.log_class_name? is true" do
