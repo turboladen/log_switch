@@ -19,7 +19,7 @@ Tailor::RakeTask.new do |task|
 end
 
 # Alias for rubygems-test
-task :test => :spec
+task :test => [:spec, :tailor]
 
-task :default => :install
+task :default => :test
 
