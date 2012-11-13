@@ -23,8 +23,12 @@ Gem::Specification.new do |s|
   s.add_development_dependency "bundler"
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec", ">= 2.6.0"
-  s.add_development_dependency "simplecov" if RUBY_VERSION > '1.8'
-  s.add_development_dependency "tailor", ">=1.1.2"
+
+  if RUBY_VERSION > '1.9'
+    s.add_development_dependency "simplecov"
+    s.add_development_dependency("tailor", ">=1.1.2") if RUBY_ENGINE == "ruby"
+  end
+
   s.add_development_dependency "yard", ">= 0.7.2"
 end
 
