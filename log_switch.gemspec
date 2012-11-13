@@ -26,7 +26,10 @@ Gem::Specification.new do |s|
 
   if RUBY_VERSION > '1.9'
     s.add_development_dependency "simplecov"
-    s.add_development_dependency("tailor", ">=1.1.2") if RUBY_ENGINE == "ruby"
+
+    if defined?(RUBY_ENGINE) && RUBY_ENGINE == "ruby"
+      s.add_development_dependency("tailor", ">=1.1.2")
+    end
   end
 
   s.add_development_dependency "yard", ">= 0.7.2"

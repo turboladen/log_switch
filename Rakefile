@@ -12,7 +12,7 @@ RSpec::Core::RakeTask.new do |t|
   t.ruby_opts = %w(-w)
 end
 
-if RUBY_ENGINE == "ruby" && RUBY_VERSION > "1.9"
+if defined?(RUBY_ENGINE) && RUBY_ENGINE == "ruby" && RUBY_VERSION > "1.9"
   require 'tailor/rake_task'
 
   Tailor::RakeTask.new do |task|
