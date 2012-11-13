@@ -10,6 +10,17 @@ module LogSwitch
     def self.included(klass)
       if LogSwitch.extender
         klass.send :define_method, :log do |*args|
+          if LogSwitch.extender.log_class_name? &&
+            LogSwitch.extender.logger.class == Logger
+
+            if args.size == 1
+              args = "<#{klass}> #{args.join}"
+            else
+              msg = args.delete_at 0
+              args.unshift("<#{klass}> #{msg}")
+            end
+          end
+
           LogSwitch.extender.log *args
         end
       else
