@@ -13,17 +13,17 @@ Gem::Specification.new do |s|
                      easily be turned on and off.)
 
   s.required_rubygems_version = ">=1.8.0"
-  s.files = Dir.glob("{lib,spec}/**/*") + Dir.glob("*.rdoc") +
+  s.files = Dir.glob("{lib,spec}/**/*") +
+    Dir.glob("*.rdoc") +
     %w(.gemtest Gemfile log_switch.gemspec Rakefile)
-  s.test_files = Dir.glob("{spec}/**/*")
-  s.require_paths = ["lib"]
 
-  s.add_development_dependency("bundler", [">= 0"])
-  s.add_development_dependency("rake", [">= 0"])
-  s.add_development_dependency("rspec", ["~> 2.6.0"])
-  if RUBY_VERSION > '1.9'
-    s.add_development_dependency("simplecov", [">= 0"])
-  end
-  s.add_development_dependency("yard", [">= 0.7.2"])
+  s.test_files = Dir.glob("{spec}/**/*")
+  s.require_paths = %w(lib)
+
+  s.add_development_dependency "bundler"
+  s.add_development_dependency "rake"
+  s.add_development_dependency "rspec", ">= 2.6.0"
+  s.add_development_dependency "simplecov" if RUBY_VERSION > '1.8'
+  s.add_development_dependency "yard", ">= 0.7.2"
 end
 

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    log_switch (0.2.0)
+    log_switch (0.4.0)
 
 GEM
   remote: http://rubygems.org/
@@ -31,6 +31,6 @@ DEPENDENCIES
   bundler
   log_switch!
   rake
-  rspec (~> 2.6.0)
+  rspec (>= 2.6.0)
   simplecov
   yard (>= 0.7.2)
