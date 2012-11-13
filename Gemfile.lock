@@ -21,6 +21,12 @@ GEM
       multi_json (~> 1.0.3)
       simplecov-html (~> 0.5.3)
     simplecov-html (0.5.3)
+    tailor (1.1.2)
+      log_switch (>= 0.3.0)
+      term-ansicolor (>= 1.0.5)
+      text-table (>= 1.2.2)
+    term-ansicolor (1.0.7)
+    text-table (1.2.2)
     yard (0.7.5)
 
 PLATFORMS
@@ -33,4 +39,5 @@ DEPENDENCIES
   rake
   rspec (>= 2.6.0)
   simplecov
+  tailor (>= 1.1.2)
   yard (>= 0.7.2)
