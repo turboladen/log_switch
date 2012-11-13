@@ -132,6 +132,34 @@ use +MyThing::Logger.log+:
 This lets you still use a single logger throughout your classes, but shortens
 the amount of typing you have to do.
 
+=== Prepend class name of #log caller to the message
+
+When you've got a bunch of different classes doing logging, it's easy to get
+lost in all the text.  Adding the class name of the class that's logging a
+message can make this easier to read.  Now log_switch will do that for you, if
+you use its Mixin.
+
+  # lib/my_thing/logger.rb
+  class MyThing::Logger
+    extend LogSwitch
+  end
+
+  MyThing::Logger.log_class_name = true
+
+  # lib/my_thing/barrel_roller.rb
+  class MyThing::BarrelRoller
+    include LogSwitch::Mixin
+
+    def do_one
+      log "I did a barrel roll!"
+    end
+  end
+
+  # somewhere else...
+  barrel_roller = MyThing::BarrelRoller.new
+  barrel_roller.do_one      # => D, [2012-11-12T21:11:32.133414 #16645] DEBUG -- : <MyThing::BarrelRoller> I did a barrel roll!
+
+
 == REQUIREMENTS
 
 * Rubies (tested):
