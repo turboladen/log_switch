@@ -25,25 +25,34 @@ module LogSwitch
   # Use to turn logging on or off.
   attr_writer :log
 
+  # Set this to the Logger you want to use.
+  attr_writer :logger
+
+  # Set the log level so you don't have to pass it in on your call.
+  attr_writer :log_level
+
+  # Toggle prepending the class name of the #log caller to the log message.
+  attr_writer :log_class_name
+
   # Tells whether logging is turned on or not.
   def log?
     @log != false
   end
-
-  # Set this to the Logger you want to use.
-  attr_writer :logger
 
   # Defaults to a +Logger+ writing to STDOUT.
   def logger
     @logger ||= ::Logger.new STDOUT
   end
 
-  # Set the log level so you don't have to pass it in on your call.
-  attr_writer :log_level
-
   # @return [Symbol] The current default log level.  Starts off as :debug.
   def log_level
     @log_level ||= :debug
+  end
+
+  # @return [Boolean] Tells whether logging of the class name with the log
+  #   message is turned on.
+  def log_class_name?
+    @log_class_name == true
   end
 
   # {#log} calls the block given to this method before it logs every time.
@@ -79,6 +88,6 @@ module LogSwitch
   def reset_config!
     self.log = true
     self.logger = ::Logger.new STDOUT
-    self.log_level = :debug
+    self.log_class_name = false
   end
 end

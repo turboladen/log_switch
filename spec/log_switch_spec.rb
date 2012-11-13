@@ -16,7 +16,7 @@ describe Kernel do
   end
 end
 
-describe "LogSwitch" do
+describe LogSwitch do
   around :each do |example|
     class MyClass; extend LogSwitch; end;
     example.run
@@ -25,11 +25,19 @@ describe "LogSwitch" do
 
   it { LogSwitch::VERSION.should == '0.3.0' }
 
-  describe ".log" do
-    it "should default to true" do
-      MyClass.log?.should be_true
+  describe ".extend_object" do
+    it "sets @extender on the class object that extended" do
+      LogSwitch.instance_variable_get(:@extender).should == MyClass
     end
+  end
 
+  describe ".extender" do
+    it "returns LogSwitch's @extender" do
+      LogSwitch.extender.should == LogSwitch.instance_variable_get(:@extender)
+    end
+  end
+
+  describe ".log" do
     it "can log at any log level" do
       logger = double "Logger"
       logger.should_receive(:send).with(:meow, "stuff")
@@ -74,25 +82,18 @@ describe "LogSwitch" do
     end
   end
 
-  describe ".log=" do
-    it "allows to set logging to false" do
+  describe ".log?" do
+    specify { MyClass.log?.should be_true }
+
+    specify {
       MyClass.log = false
       MyClass.log?.should be_false
-    end
+    }
   end
 
   describe ".logger" do
     it "is a Logger by default" do
       MyClass.logger.should be_a Logger
-    end
-  end
-
-  describe ".logger=" do
-    it "allows to set to use another logger" do
-      original_logger = MyClass.logger
-      another_logger = Logger.new nil
-      MyClass.logger = another_logger
-      MyClass.logger.should_not == original_logger
     end
   end
 
@@ -102,20 +103,19 @@ describe "LogSwitch" do
     end
   end
 
-  describe ".log_level=" do
-    it "changes the level that #log(msg, level=) uses" do
-      MyClass.logger.should_receive(:debug)
-      MyClass.log("testing...")
-      MyClass.log_level = :info
-      MyClass.logger.should_receive(:info)
-      MyClass.log("testing...")
-    end
-  end
-
   describe ".before" do
     it "assigns the given block to @before_block" do
       MyClass.before { "I'm a block" }
       MyClass.instance_variable_get(:@before_block).should be_a Proc
     end
+  end
+
+  describe ".log_class_name?" do
+    specify { MyClass.log_class_name?.should be_false }
+
+    specify {
+      MyClass.log_class_name = true
+      MyClass.log_class_name?.should be_true
+    }
   end
 end
