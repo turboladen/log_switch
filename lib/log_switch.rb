@@ -36,7 +36,8 @@ module LogSwitch
 
   # Tells whether logging is turned on or not.
   def log?
-    @log != false
+    #@log != false
+    !!@log ||= false
   end
 
   # Defaults to a +Logger+ writing to STDOUT.
