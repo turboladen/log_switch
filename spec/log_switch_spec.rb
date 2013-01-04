@@ -23,7 +23,7 @@ describe LogSwitch do
     MyClass.reset_config!
   end
 
-  it { LogSwitch::VERSION.should == '0.4.0' }
+  it { LogSwitch::VERSION.should == '0.4.1' }
 
   describe ".extend_object" do
     it "sets @extender on the class object that extended" do
