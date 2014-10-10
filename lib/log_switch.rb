@@ -1,94 +1,149 @@
-require "logger"
-require File.expand_path(File.dirname(__FILE__) + '/log_switch/version')
-require File.expand_path(File.dirname(__FILE__) + '/log_switch/mixin')
+require 'logger'
+require_relative 'log_switch/version'
 
 # LogSwitch allows for extending a class/module with a logger and, most
 # importantly, allows for turning off logging programmatically.  See the
 # +README.rdoc+ for more info.
 module LogSwitch
+  def self.included(base)
+    @includers ||= []
+    @includers << base
+    base.extend ClassMethods
+    base.send(:include, InstanceMethods)
 
-  # Saves the name of the class that extended itself with this module.  Used
-  # by {LogSwitch::Mixin} to know which class to include itself to.
-  def self.extend_object(base)
-    @extender = base
-    super(base)
-  end
-
-  # Simply returns the name of the class that extended itself with this module.
-  # It's set by {.extend_object}.
-  #
-  # @return [Class] The class that extended itself with LogSwitch.
-  def self.extender
-    @extender
-  end
-
-  # Use to turn logging on or off.
-  attr_writer :log
-
-  # Set this to the Logger you want to use.
-  attr_writer :logger
-
-  # Set the log level so you don't have to pass it in on your call.
-  attr_writer :log_level
-
-  # Toggle prepending the class name of the #log caller to the log message.
-  attr_writer :log_class_name
-
-  # Tells whether logging is turned on or not.
-  def log?
-    #@log != false
-    !!@log ||= false
-  end
-
-  # Defaults to a +Logger+ writing to STDOUT.
-  def logger
-    @logger ||= ::Logger.new STDOUT
-  end
-
-  # @return [Symbol] The current default log level.  Starts off as :debug.
-  def log_level
-    @log_level ||= :debug
-  end
-
-  # @return [Boolean] Tells whether logging of the class name with the log
-  #   message is turned on.
-  def log_class_name?
-    @log_class_name == true
-  end
-
-  # {#log} calls the block given to this method before it logs every time.
-  # This, thus, acts as a hook in the case where you want to make sure some
-  # code gets executed before you log a message.  Useful for making sure a file
-  # exists before logging to it.
-  #
-  # @param [Proc] block The block of code to execute before logging a message
-  #   with {#log}.
-  def before(&block)
-    @before_block ||= block
-  end
-
-  # Logs a message using the level provided.  If no level provided, use
-  # +@log_level+.
-  #
-  # @param [String] message The message to log.
-  # @param [Symbol] level The log level to send to your Logger.
-  def log(message, level=log_level)
-    before.call unless before.nil?
-    yield if block_given?
-
-    if log?
-      if message.respond_to? :each_line
-        message.each_line { |line| logger.send level, line.chomp }
-      else
-        logger.send(level, message)
+    base.class_eval do
+      def self.included(b)
+        b.extend ClassMethods
+        b.send :include, InstanceMethods
       end
     end
   end
 
+  # Defaults to a +Logger+ writing to STDOUT.
+  def self.logger
+    @logger ||= ::Logger.new STDOUT
+  end
+
+  def self.logger=(new_logger)
+    @logger = new_logger
+  end
+
   # Sets back to defaults.
-  def reset_config!
-    self.log = true
+  def self.reset_config!
     self.logger = ::Logger.new STDOUT
-    self.log_class_name = false
+
+    @includers.each do |klass|
+      klass.logging_enabled = false
+      klass.log_class_name = true
+    end
+  end
+
+  module ClassMethods
+    # @param value [Boolean]
+    def logging_enabled
+      @@logging_enabled ||= false
+    end
+
+    # Tells whether logging is turned on or not.
+    #
+    # @param value [Boolean]
+    def logging_enabled?
+      !!logging_enabled
+    end
+
+    # Use to turn logging on or off.
+    #
+    # @param value [Boolean]
+    def logging_enabled=(value)
+      @@logging_enabled = value
+    end
+
+    # @return [Symbol] The current default log level.  Starts off as :debug.
+    def default_log_level
+      @@default_log_level ||= :debug
+    end
+
+    # @param level [Symbol]
+    def default_log_level=(level)
+      @@default_log_level = level
+    end
+
+    # @return [Boolean] Tells whether logging of the class name with the log
+    #   message is turned on.
+    def log_class_name?
+      log_class_name
+    end
+
+    def log_class_name
+      @@log_class_name ||= true
+    end
+
+    # Toggle prepending the class name of the #log caller to the log message.
+    def log_class_name=(value)
+      @@log_class_name = value
+    end
+
+    def logger
+      @@logger ||= LogSwitch.logger
+    end
+
+    def logger=(new_logger)
+      @@logger = new_logger
+    end
+
+    # {#log} calls the block given to this method before it logs every time.
+    # This, thus, acts as a hook in the case where you want to make sure some
+    # code gets executed before you log a message.  Useful for making sure a file
+    # exists before logging to it.
+    #
+    # @param [Proc] block The block of code to execute before logging a message
+    #   with {#log}.
+    def before_log=(block)
+      @@before_block ||= block
+    end
+
+    def before_log
+      @@before_block ||= Proc.new do; end
+    end
+  end
+
+  module InstanceMethods
+    def logger
+      self.class.logger
+    end
+
+    # Logs a message using the level provided.  If no level provided, use
+    # +@log_level+.
+    #
+    # @param [String] message The message to log.
+    # @param [Symbol] level The log level to send to your Logger.
+    def log(message, level=nil)
+      level ||= self.class.default_log_level
+
+      self.class.before_log.call
+      yield if block_given?
+
+      if self.class.logging_enabled?
+        if message.respond_to? :each_line
+          message.each_line do |line|
+            msg = filter_class_name(line.chomp)
+            logger.send(level, msg)
+          end
+        else
+          message = filter_class_name(message)
+          logger.send(level, message)
+        end
+      end
+    end
+
+    private
+
+    def filter_class_name(message)
+      if self.class.log_class_name?
+        "<#{self.class.name}> #{message}"
+      else
+        message
+      end
+    end
   end
 end
