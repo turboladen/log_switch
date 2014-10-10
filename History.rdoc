@@ -1,3 +1,14 @@
+=== 1.0.0 / 2014-10-10
+
+* Improvements:
+  * LogSwitch can now be included in your own module, then that included in
+    other modules.  This allows toggling logging per includer.
+* Other stuff:
+  * Removed LogSwitch::Mixin in favor of simpler implementation.
+* Bug fixes:
+  * gh-5[https://github.com/turboladen/log_switch/issues/5]: The improvements
+    listed above alleviate this problem.
+
 === 0.4.1 / 2013-01-04
 
 * Bug fixes:
@@ -54,4 +65,3 @@
   * +require+ and +extend+ to mix in to your class/module to get a single point of logging
   * Switch on/off logging
   * Use whatever Logger you want
-
