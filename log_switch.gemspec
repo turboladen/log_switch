@@ -7,6 +7,7 @@ Gem::Specification.new do |s|
   s.authors = ["Steve Loveless"]
   s.homepage = %q(http://github.com/turboladen/log_switch)
   s.email = %w(steve.loveless@gmail.com)
+  s.license = "Unlicense"
   s.summary = %q(Extends a class for singleton style logging that can easily be
                  turned on and off.)
   s.description = %q(Extends a class for singleton style logging that can 
@@ -15,7 +16,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = ">=1.8.0"
   s.files = Dir.glob("{lib,spec}/**/*") +
     Dir.glob("*.rdoc") +
-    %w(.gemtest Gemfile log_switch.gemspec Rakefile)
+    %w(.gemtest Gemfile LICENSE log_switch.gemspec Rakefile)
 
   s.test_files = Dir.glob("{spec}/**/*")
   s.require_paths = %w(lib)
