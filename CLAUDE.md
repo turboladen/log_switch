@@ -5,34 +5,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Overview
 
 `log_switch` is a small Ruby gem (~150 LOC in `lib/log_switch.rb`) that mixes a shared logger into a
-class and lets logging be switched on/off programmatically. Last released 1.0.0 (2014); the
-toolchain predates modern Ruby (see below).
+class and lets logging be switched on/off programmatically. Last released 1.0.0 (2014). The dev
+toolchain sat broken for a decade and has been revived — Bundler works; see Commands.
 
 ## Commands
 
-**The Bundler toolchain does not work on current Ruby.** `Gemfile` uses `source :rubygems`, which
-modern Bundler rejects outright (`[REMOVED] The source :rubygems is disallowed`). So `bundle install`,
-`bundle exec rspec`, and every `rake` task (`rake spec`, `rake test`, `rake yard`, the default task)
-fail before running anything. Don't document or suggest them as working commands; don't "fix" the
-Gemfile casually either, since the pinned deps in `Gemfile.lock` (rspec 2.12, tailor 1.1.2) won't
-resolve on current Ruby anyway.
-
-Run the specs with the system-installed rspec 3, bypassing Bundler:
+Bundler is the supported path and works on current Ruby:
 
 ```sh
-# Full suite (18 examples, 1 pending)
-ruby -Ispec -e 'require "rspec/core"; exit RSpec::Core::Runner.run(["spec"], $stderr, $stdout)'
+bundle install
+
+# Full suite (18 examples, 0 failures, 1 pending)
+bundle exec rake              # default task -> :test -> :spec
+bundle exec rspec             # the same suite, directly
 
 # Single example, by line number
-ruby -Ispec -e 'require "rspec/core"; exit RSpec::Core::Runner.run(["spec/log_switch_spec.rb:47"], $stderr, $stdout)'
+bundle exec rspec spec/log_switch_spec.rb:47
 ```
 
-`-Ispec` is required (spec_helper adds `lib/` itself). There is no `rspec` executable on PATH. The
-specs were written for rspec 2 but use `expect` syntax and pass on rspec 3. Runs write a gitignored
+Verified on Ruby 3.4.9 and 4.0.5. The gemspec sets `required_ruby_version >= 3.3`. The specs were
+written for rspec 2 but use `expect` syntax and pass unmodified on rspec 3. Runs write a gitignored
 `coverage/` directory via SimpleCov.
 
-`tailor` (the style linter wired into `rake test`) is unavailable and unrunnable — note that it
-depends on this very gem, so any circular-dependency confusion there is expected.
+### No `Gemfile.lock`
+
+Deleted and gitignored. This is a library, not an app — the lock would only freeze dev deps, and
+consumers resolve against the gemspec regardless. `bundle install` re-resolves.
+
+### Fallback: running without Bundler
+
+```sh
+ruby -e 'require "rspec/core"; exit RSpec::Core::Runner.run(["spec"], $stderr, $stdout)'
+```
+
+No `-I` flag is needed, in this or any other form — rspec-core's `Configuration#requires=` puts `lib`
+and the `spec` default_path on the load path itself, on every invocation path. Run it from the repo
+root, since it resolves those relative to the cwd. (Verified against rspec-core 3.13.6. Earlier
+revisions of this file documented an `-Ispec` that does nothing.)
+
+**This bypass cannot see packaging defects, so never conclude the gem is healthy from it.** It loads
+`lib/` off the filesystem instead of resolving the gem through Bundler, so a missing runtime
+dependency is invisible. That is exactly how the `logger` dep went missing — the gem was unusable on Ruby 4.0 for
+every Bundler-managed consumer — went undetected while this command reported a green 18/0/1. To test
+packaging, install the gem into a scratch consumer bundle via a `path:` source and require it.
+
+Coverage differs between the two paths (50/65 under Bundler, 52/67 bypassed). Not a defect: the
+`gemspec` directive makes Bundler `require` `log_switch/version` before `SimpleCov.start`, so
+version.rb's 2 lines go untracked.
+
+### No linter is wired up
+
+`rake test` runs specs only. `tailor` used to be wired in and was removed: last released 2014-11-05,
+and it declares `log_switch ~> 0.3.0` as a *runtime* dep — a cycle back onto this gem, and one that
+can't even resolve against 1.0.0. RuboCop is the intended replacement, not yet added.
 
 ## Architecture
 
