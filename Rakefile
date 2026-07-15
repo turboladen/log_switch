@@ -12,18 +12,6 @@ RSpec::Core::RakeTask.new do |t|
   t.ruby_opts = %w(-w)
 end
 
-if defined?(RUBY_ENGINE) && RUBY_ENGINE == "ruby" && RUBY_VERSION > "1.9"
-  require 'tailor/rake_task'
-
-  Tailor::RakeTask.new do |task|
-    task.file_set 'lib/**/*.rb'
-    task.file_set 'spec/**/*.rb', :specs
-  end
-
-# Alias for rubygems-test
-  task :test => [:spec, :tailor]
-else
-  task :test => :spec
-end
+task :test => :spec
 
 task :default => :test
