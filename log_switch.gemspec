@@ -20,6 +20,8 @@ Gem::Specification.new do |s|
   s.test_files = Dir.glob("{spec}/**/*")
   s.require_paths = %w(lib)
 
+  s.add_dependency "logger", "~> 1.5"
+
   s.add_development_dependency "bundler"
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec", ">= 2.6.0"
