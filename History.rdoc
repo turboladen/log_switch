@@ -10,7 +10,7 @@
 * Bug fixes:
   * Declared +logger+ as a runtime dependency.  +lib/log_switch.rb+ has always
     required it, but the gemspec never declared it--so under Bundler on Ruby
-    4.0, where +logger+ is no longer a default gem, +require 'log_switch'+
+    4.0, where +logger+ is no longer a default gem, requiring +log_switch+
     raised LoadError.
 
 === 1.0.0 / 2014-10-10
