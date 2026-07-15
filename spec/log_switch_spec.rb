@@ -6,7 +6,7 @@ class IncluderClass; include LogSwitch; end
 
 describe LogSwitch do
   before { LogSwitch.reset_config! }
-  specify { expect(LogSwitch::VERSION).to eq '1.0.0' }
+  specify { expect(LogSwitch::VERSION).to eq '1.1.0' }
 
   describe 'base class methods' do
     describe '.included' do

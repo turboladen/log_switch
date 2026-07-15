@@ -1,3 +1,18 @@
+=== 1.1.0 / 2026-07-14
+
+* Other stuff:
+  * The gemspec now requires Ruby >= 3.3.  Older Rubies will continue to
+    resolve to 1.0.0.
+  * Declared the license (Unlicense) in the gemspec; the LICENSE file now
+    ships with the gem.
+  * Replaced the tailor linter with RuboCop, and the dead Travis config with
+    GitHub Actions, testing Ruby 3.3, 3.4 and 4.0.
+* Bug fixes:
+  * Declared +logger+ as a runtime dependency.  +lib/log_switch.rb+ has always
+    required it, but the gemspec never declared it--so under Bundler on Ruby
+    4.0, where +logger+ is no longer a default gem, +require 'log_switch'+
+    raised LoadError.
+
 === 1.0.0 / 2014-10-10
 
 * Improvements:
