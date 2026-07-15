@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
 
   s.metadata = {
     'source_code_uri' => 'https://github.com/turboladen/log_switch',
-    'changelog_uri' => 'https://github.com/turboladen/log_switch/blob/develop/CHANGELOG.md',
+    'changelog_uri' => "https://github.com/turboladen/log_switch/blob/v#{LogSwitch::VERSION}/CHANGELOG.md",
     'rubygems_mfa_required' => 'true'
   }
 
