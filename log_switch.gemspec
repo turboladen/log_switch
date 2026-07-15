@@ -19,13 +19,12 @@ Gem::Specification.new do |s|
 
   s.metadata = {
     'source_code_uri' => 'https://github.com/turboladen/log_switch',
-    'changelog_uri' => 'https://github.com/turboladen/log_switch/blob/develop/History.rdoc',
+    'changelog_uri' => 'https://github.com/turboladen/log_switch/blob/develop/CHANGELOG.md',
     'rubygems_mfa_required' => 'true'
   }
 
   s.files = Dir.glob('{lib,spec}/**/*') +
-            Dir.glob('*.rdoc') +
-            %w[Gemfile LICENSE log_switch.gemspec Rakefile]
+            %w[CHANGELOG.md Gemfile LICENSE README.md log_switch.gemspec Rakefile]
 
   s.require_paths = %w[lib]
 

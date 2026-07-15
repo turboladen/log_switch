@@ -6,9 +6,9 @@ require 'yard'
 require 'rubocop/rake_task'
 
 YARD::Rake::YardocTask.new do |t|
-  t.files = %w[lib/**/*.rb - History.rdoc]
+  t.files = %w[lib/**/*.rb - CHANGELOG.md]
   t.options = %W[--title log_switch Documentation (#{LogSwitch::VERSION})]
-  t.options += %w[--main README.rdoc]
+  t.options += %w[--main README.md]
 end
 
 RSpec::Core::RakeTask.new do |t|
