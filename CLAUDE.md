@@ -178,8 +178,16 @@ people expecting output from a fresh includer.
 
 - Docs are RDoc (`.rdoc`), not Markdown; YARD tags (`@param`, `@return`) annotate the source.
 - `History.rdoc` is a hand-maintained changelog, newest first — add an entry for user-facing changes.
+- RDoc's `+code+` spans a **single word**. A multi-word span ships literal `+` signs and smart-quotes
+  its contents (`+require 'x'+` renders as `+require ‘x’+`). Every span in `History.rdoc` is one
+  token; keep it that way, and render an entry before shipping rather than eyeballing it.
 - The version lives in `lib/log_switch/version.rb` and is asserted by a spec, so bumping it means
   updating `spec/log_switch_spec.rb:7` too.
+- The gemspec's `%q()` summary/description span two source lines, so their indentation and trailing
+  whitespace **are** the published strings. After any gemspec change, diff the *loaded* spec
+  (`Gem::Specification.load`), not the source — a formatting cop silently altered `description` this way.
+- `Gem::Specification#validate` **raises** on an `s.files` entry that doesn't exist; it does not warn.
+  Edit the list and the filesystem in the same step.
 
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
