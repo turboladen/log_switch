@@ -4,9 +4,9 @@
 
 ## Description
 
-While developing other gems that needed a single class/singleton style logger, I
-got tired of repeating the code to create that logger and mix it in to my base
-class. I just wanted to require something, mix it in, and log:
+While developing other gems that needed a single class/singleton style logger, I got tired of
+repeating the code to create that logger and mix it in to my base class. I just wanted to require
+something, mix it in, and log:
 
 ```ruby
 MyThing.new.log "some message"
@@ -24,8 +24,8 @@ This gem does that.
 
 ### Basic use
 
-`include LogSwitch` to give your class a class-level logger and an instance-level
-`#log` method. **Logging is off by default** — turn it on explicitly:
+`include LogSwitch` to give your class a class-level logger and an instance-level `#log` method.
+**Logging is off by default** — turn it on explicitly:
 
 ```ruby
 require 'log_switch'
@@ -44,6 +44,8 @@ Switch it back off and calls become no-ops:
 ```ruby
 MyThing.logging_enabled = false
 MyThing.new.log "You're my favorite."   # => nothing is written
+
+MyThing.logging_enabled = true          # ...and back on, for the examples below
 ```
 
 Note the class name is prepended to each message. That is on by default.
@@ -65,8 +67,7 @@ MyThing.new.log "Stuff!", :info
 # => I, [2026-07-15T12:46:30.206499 #66434]  INFO -- : <MyThing> Stuff!
 ```
 
-The level is passed straight through to your Logger, so any method it responds
-to will do.
+The level is passed straight through to your Logger, so any method it responds to will do.
 
 ### Using your own Logger
 
@@ -77,13 +78,13 @@ MyThing.logger = Logger.new('log.txt')
 MyThing.new.log "hi!"
 ```
 
-`LogSwitch.logger` sets the default for includers that have not set their own,
-and `LogSwitch.reset_config!` puts things back to a fresh `STDOUT` logger.
+`LogSwitch.logger` sets the default for includers that have not set their own, and
+`LogSwitch.reset_config!` puts things back to a fresh `STDOUT` logger.
 
 ### Multi-line messages
 
-Anything responding to `#each_line` is logged one line per call, so a multi-line
-message stays readable:
+Anything responding to `#each_line` is logged one line per call, so a multi-line message stays
+readable:
 
 ```ruby
 MyThing.new.log "line one\nline two"
@@ -91,21 +92,22 @@ MyThing.new.log "line one\nline two"
 # => D, [...] DEBUG -- : <MyThing> line two
 ```
 
-Objects that do not respond to `#each_line` (an Array, an Exception) are logged
-whole.
+Objects that do not respond to `#each_line` (an Array, an Exception) are logged whole.
 
 ### Hooks
 
-Pass a block to `#log` and it runs before the message is written — handy for
-one-off setup:
+Pass a block to `#log` and it runs before the message is written — handy for one-off setup:
 
 ```ruby
+require 'fileutils'
+log_directory = File.expand_path('log')
+
 MyThing.new.log("Thanks brah!") do
   FileUtils.mkdir_p(log_directory)
 end
 ```
 
-For something that should run before *every* call, use `before_log`:
+For something that should run before _every_ call, use `before_log`:
 
 ```ruby
 MyThing.before_log = proc { FileUtils.mkdir_p(log_directory) }
@@ -135,6 +137,6 @@ bundle exec rake      # specs + RuboCop
 
 ## Thanks
 
-I need to thank the [savon](https://github.com/savonrb/savon) project for most of
-the code here. Somehow I ran across how they do logging and started following
-suit. The code in `log_switch` is almost identical to Savon's logging.
+I need to thank the [savon](https://github.com/savonrb/savon) project for most of the code here.
+Somehow I ran across how they do logging and started following suit. The code in `log_switch` is
+almost identical to Savon's logging.
