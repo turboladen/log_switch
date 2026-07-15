@@ -41,9 +41,8 @@ Style/SpecialGlobalVars:
   EnforcedStyle: use_english_names
 
 # This one also carries an Exclude, and that Exclude is debt, not policy --
-# the one deliberate exception to the split. `lib/log_switch.rb` is byte-identical
-# to the published 1.0 API and stays that way, so its offense is excluded rather
-# than fixed. It lives here and not in the todo because a regenerated todo drops
+# the one deliberate exception to the split. `lib/log_switch.rb` must not drift
+# from the published 1.0 API, so its offense is excluded rather than fixed. It lives here and not in the todo because a regenerated todo drops
 # its own exclusion, the offense goes live, and `rake rubocop:autocorrect_all`
 # (which RuboCop::RakeTask exposes) would rewrite lib/.
 #

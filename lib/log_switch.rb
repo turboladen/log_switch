@@ -1,9 +1,8 @@
 require 'logger'
 require_relative 'log_switch/version'
 
-# LogSwitch allows for extending a class/module with a logger and, most
-# importantly, allows for turning off logging programmatically.  See the
-# +README.rdoc+ for more info.
+# LogSwitch mixes a logger into a class/module and, most importantly, allows for
+# turning off logging programmatically.  See README.md for more info.
 module LogSwitch
   def self.included(base)
     @includers ||= []
@@ -39,6 +38,10 @@ module LogSwitch
   end
 
   module ClassMethods
+    # TODO: broken -- the class variables below are declared in this module body,
+    #   so they live on ClassMethods itself and every includer shares one slot:
+    #   `A.logging_enabled = true` also enables B.  Intent is per-includer config.
+
     # @param value [Boolean]
     def logging_enabled
       @@logging_enabled ||= false
@@ -74,6 +77,8 @@ module LogSwitch
       log_class_name
     end
 
+    # TODO: broken -- `||=` against a truthy default overwrites a stored `false`
+    #   on the next read, so `log_class_name = false` never sticks.
     def log_class_name
       @@log_class_name ||= true
     end
@@ -98,6 +103,8 @@ module LogSwitch
     #
     # @param [Proc] block The block of code to execute before logging a message
     #   with {#log}.
+    # TODO: broken -- `||=` keeps only the first assignment, and #before_log
+    #   initialises the slot on first read, so later hooks are silently ignored.
     def before_log=(block)
       @@before_block ||= block
     end
