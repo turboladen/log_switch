@@ -11,6 +11,8 @@ doc
 # bundler
 .bundle
 Gemfile.lock
+# BUNDLE_PATH under CI's bundler-cache
+/vendor/bundle
 
 # packaging
 pkg
