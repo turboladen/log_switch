@@ -12,6 +12,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Declared the license (Unlicense) in the gemspec; the LICENSE file now ships with the gem.
+- The gemspec now declares a `changelog_uri`, so rubygems.org links to the changelog. It points at
+  the released version's tag rather than a branch, so each release's link is immutable.
 
 ### Changed
 
