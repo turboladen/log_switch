@@ -35,7 +35,7 @@ jobs:
         # It breaks later: once 4.1 ships, "4" matches 4.1.x and this job tests
         # 4.1 while the label still reads 4.0. actionlint types quoted and
         # unquoted identically ({ruby: number}), so nothing catches it but you.
-        ruby: ['3.3', '3.4', '4.0']
+        ruby: ["3.3", "3.4", "4.0"]
     steps:
       - uses: actions/checkout@v7
 
@@ -56,7 +56,17 @@ jobs:
         with:
           # RuboCop infers TargetRubyVersion from the gemspec (3.3), so its
           # verdict does not vary with the interpreter -- one Ruby is enough.
-          ruby-version: '3.4'
+          ruby-version: "3.4"
           bundler-cache: true
 
       - run: bundle exec rake rubocop
+
+  format:
+    name: format (dprint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # dprint covers Markdown and YAML; RuboCop covers Ruby. It is a binary
+      # rather than a gem, so it needs installing rather than bundling.
+      - uses: dprint/check@v2.3

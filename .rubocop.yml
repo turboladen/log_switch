@@ -18,7 +18,7 @@ Metrics/BlockLength:
     merge:
       - Exclude
   Exclude:
-    - 'spec/**/*'
+    - "spec/**/*"
 
 # The three cops below restate RuboCop's own defaults. They look redundant and
 # are not: `--auto-gen-config` "resolves" a cop by writing an `EnforcedStyle`
@@ -51,4 +51,4 @@ Style/SpecialGlobalVars:
 Layout/SpaceAroundEqualsInParameterDefault:
   EnforcedStyle: space
   Exclude:
-    - 'lib/log_switch.rb'
+    - "lib/log_switch.rb"
