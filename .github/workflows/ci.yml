@@ -70,3 +70,91 @@ jobs:
       # dprint covers Markdown and YAML; RuboCop covers Ruby. It is a binary
       # rather than a gem, so it needs installing rather than bundling.
       - uses: dprint/check@v2.3
+
+  package:
+    name: package (ruby ${{ matrix.ruby }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Quoting is load-bearing here for the same reason as in `test` above.
+        #
+        # The 4.0 entry is load-bearing for a second reason, so don't trim this
+        # matrix the way `lint` legitimately does: `logger` is a DEFAULT gem on
+        # 3.3 and 3.4, so an undeclared `require 'logger'` still resolves there
+        # even inside this consumer bundle. Those two entries would stay green
+        # through the exact defect that motivated this job. 4.0 dropped logger
+        # from the defaults and is the only entry that can catch it. Verified
+        # per Ruby via `Gem::Specification#default_gem?`.
+        ruby: ["3.3", "3.4", "4.0"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          # No bundler-cache, deliberately. This job must not install the dev
+          # bundle: the point is a consumer bundle holding only the gemspec's
+          # declared runtime deps, with nothing to mask a missing one. The dev
+          # bundle's ~26 gems could supply an undeclared dep by accident --
+          # nothing masks `logger` today, but that is luck, not design.
+
+      # Gem::Specification#validate raises here on an s.files entry that does
+      # not exist. No other gate builds the gem, so nothing else can see that.
+      - run: gem build log_switch.gemspec -o "$RUNNER_TEMP/log_switch.gem"
+
+      # Unpacking yields a tree of only the shipped file set, so the consumer
+      # below resolves against what users download rather than the working
+      # tree. log_switch.gemspec is itself in s.files, so the unpacked dir has
+      # the .gemspec a `path:` source needs. `gem unpack` names the output dir
+      # after the .gem filename, which -o fixes above -- hence pkg/log_switch,
+      # with no version in it to keep in sync.
+      - run: gem unpack "$RUNNER_TEMP/log_switch.gem" --target "$RUNNER_TEMP/pkg"
+
+      - name: Install and require the packaged gem as a consumer would
+        env:
+          EXPECTED_RUBY: ${{ matrix.ruby }}
+          # Explicit, so the repo's Gemfile is unreachable by construction
+          # rather than by luck of the cwd. $RUNNER_TEMP is outside the
+          # checkout and has no Gemfile above it either.
+          BUNDLE_GEMFILE: ${{ runner.temp }}/consumer/Gemfile
+        run: |
+          mkdir -p "$RUNNER_TEMP/consumer"
+          cat > "$RUNNER_TEMP/consumer/Gemfile" <<EOF
+          source 'https://rubygems.org'
+          gem 'log_switch', path: '$RUNNER_TEMP/pkg/log_switch'
+          EOF
+
+          # A `path:` source reads the unpacked gemspec, not this repo's
+          # Gemfile, so the bundle holds exactly the declared runtime deps.
+          bundle install
+
+          cat > "$RUNNER_TEMP/consumer/probe.rb" <<'RUBY'
+          # `bundle exec` resolves `ruby` from PATH, not from the interpreter
+          # running Bundler, so confirm the matrix Ruby is the one under test.
+          # Comparing major.minor exactly also catches the YAML-float bug the
+          # matrix quoting guards against: unquoted 4.0 reaches us as "4",
+          # and "4.0" != "4" aborts rather than silently testing the wrong Ruby.
+          expected = ENV.fetch('EXPECTED_RUBY')
+          actual = RUBY_VERSION.split('.').first(2).join('.')
+          abort "expected Ruby #{expected}, got #{RUBY_VERSION}" unless actual == expected
+
+          # `require 'logger'` is line 1 of lib/log_switch.rb, so the require
+          # alone trips a missing dep -- but exercise the API too, to catch
+          # load-order breakage a bare require would sail past.
+          require 'log_switch'
+
+          class Probe
+            include LogSwitch
+          end
+
+          Probe.logging_enabled = true
+          Probe.new.log('packaging smoke probe')
+          RUBY
+
+          # Under `bundle exec` the bundle's $LOAD_PATH is closed -- this is
+          # the whole mechanism, and why the probe must not be run any other
+          # way. Verified: with `logger` undeclared this still fails on 4.0
+          # even with logger installed system-wide, which is how the runner
+          # ships it.
+          bundle exec ruby "$RUNNER_TEMP/consumer/probe.rb"
