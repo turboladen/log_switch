@@ -16,8 +16,9 @@ Bundler is the supported path and works on current Ruby:
 bundle install
 
 # Full suite (18 examples, 0 failures, 1 pending)
-bundle exec rake              # default task -> :test -> :spec
+bundle exec rake              # default task -> :test -> [:spec, :rubocop]
 bundle exec rspec             # the same suite, directly
+bundle exec rubocop           # the linter on its own
 
 # Single example, by line number
 bundle exec rspec spec/log_switch_spec.rb:47
@@ -53,11 +54,44 @@ Coverage differs between the two paths (50/65 under Bundler, 52/67 bypassed). No
 `gemspec` directive makes Bundler `require` `log_switch/version` before `SimpleCov.start`, so
 version.rb's 2 lines go untracked.
 
-### No linter is wired up
+### RuboCop is the linter
 
-`rake test` runs specs only. `tailor` used to be wired in and was removed: last released 2014-11-05,
-and it declares `log_switch ~> 0.3.0` as a *runtime* dep — a cycle back onto this gem, and one that
-can't even resolve against 1.0.0. RuboCop is the intended replacement, not yet added.
+`rake test` runs `[:spec, :rubocop]`. Everything outside `lib/` is clean. The remaining debt is 24
+offenses in `lib/` — 23 quarantined in `.rubocop_todo.yml`, and one
+(`Layout/SpaceAroundEqualsInParameterDefault`) in `.rubocop.yml`, which explains in place why it has
+to live there. The gate is green over them; a new violation still fails it.
+
+They are held for one reason: **`lib/log_switch.rb` is byte-identical to the published 1.0 API and
+stays that way.** Several are ordinary cosmetics that would be fine to fix elsewhere. The ones that
+are not: `Style/ClassVars` x10 is RuboCop independently rediscovering the config-state bug (see
+Architecture); `Style/GlobalStdStream` x2 would change behaviour (`STDOUT` cannot be reassigned,
+`$stdout` can); `Metrics/AbcSize` + `MethodLength` are a design question about `#log`; and
+`Style/MutableConstant` + `Style/FrozenStringLiteralComment` on `version.rb` would flip
+`LogSwitch::VERSION.frozen?` false to true, which is API-observable. Each is filed as a follow-up.
+Note `RuboCop::RakeTask` exposes `rake rubocop:autocorrect_all`, which would rewrite `lib/`.
+
+`tailor` used to be wired in here and was removed. It installed fine — pure Ruby, no
+`required_ruby_version` — so "tailor doesn't build" (an old claim in this file) was never true. The
+real reason is a runtime dependency cycle back onto this gem, and the versions differ: tailor 1.1.2
+(what `Gemfile.lock` froze) needs `log_switch >= 0.3.0`, which 1.0.0 satisfies; tailor 1.4.1 needs
+`~> 0.3.0`, which it does not. The cycle silently pinned the linter to a 2012-era release.
+
+**`.rubocop.yml` is policy; `.rubocop_todo.yml` is debt.** Policy is what we choose never to enforce
+(RSpec block length) or always enforce (modern style). Debt is what we intend to fix. One entry
+deliberately breaks that split and says so in place.
+
+To regenerate the todo:
+
+```sh
+bundle exec rubocop --auto-gen-config --auto-gen-only-exclude --no-exclude-limit
+```
+
+**`--auto-gen-config` inverts the project's style, and `--auto-gen-only-exclude` does not stop it.**
+For a cop whose offences are self-consistent it writes an `EnforcedStyle` into the todo — a permanent
+policy change, filed under a name that reads as temporary. Verified: even with the flag it still
+emits `hash_rockets`, `use_perl_names`, `no_space`, `brackets`. **Convert any `EnforcedStyle:` in the
+regenerated todo to `Exclude:` by hand**, and expect `rake test` to be RED in between. The pins in
+`.rubocop.yml` exist to override this and must win.
 
 ## Architecture
 
