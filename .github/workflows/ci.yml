@@ -1,0 +1,62 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  # Deliberately unfiltered: `branches:` here would filter on the PR's BASE
+  # branch, and stacked PRs are based on each other rather than on develop --
+  # so a [develop] filter matches none of them and they merge with zero checks.
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Supersede redundant PR runs, but never cancel a develop push run.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: test (ruby ${{ matrix.ruby }})
+    runs-on: ubuntu-latest
+    strategy:
+      # The 3.3 entry is the only place the gemspec's required_ruby_version
+      # floor is exercised; let the other Rubies finish so a 3.3 failure can be
+      # told apart from a break that spans every version.
+      fail-fast: false
+      matrix:
+        # Quotes are load-bearing, not style -- but not for the reason you'd
+        # guess, so don't "verify" this by removing them and watching CI pass.
+        # Unquoted, YAML reads 4.0 as a float and GitHub stringifies it to "4"
+        # ('3.3'/'3.4' are unaffected). That does NOT error today: setup-ruby
+        # prefix-matches, so "4" resolves to 4.0.6 -- the same Ruby, silently.
+        # It breaks later: once 4.1 ships, "4" matches 4.1.x and this job tests
+        # 4.1 while the label still reads 4.0. actionlint types quoted and
+        # unquoted identically ({ruby: number}), so nothing catches it but you.
+        ruby: ['3.3', '3.4', '4.0']
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - run: bundle exec rake spec
+
+  lint:
+    name: lint (rubocop)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          # RuboCop infers TargetRubyVersion from the gemspec (3.3), so its
+          # verdict does not vary with the interpreter -- one Ruby is enough.
+          ruby-version: '3.4'
+          bundler-cache: true
+
+      - run: bundle exec rake rubocop

@@ -24,9 +24,27 @@ bundle exec rubocop           # the linter on its own
 bundle exec rspec spec/log_switch_spec.rb:47
 ```
 
-Verified on Ruby 3.4.9 and 4.0.5. The gemspec sets `required_ruby_version >= 3.3`. The specs were
-written for rspec 2 but use `expect` syntax and pass unmodified on rspec 3. Runs write a gitignored
-`coverage/` directory via SimpleCov.
+The specs were written for rspec 2 but use `expect` syntax and pass unmodified on rspec 3. Runs write
+a gitignored `coverage/` directory via SimpleCov.
+
+### CI defines the supported Rubies — this file does not
+
+`.github/workflows/ci.yml` is the authority on the matrix; it runs `rake spec` per Ruby plus
+`rake rubocop` once. Don't restate the matrix here — it will rot.
+
+`required_ruby_version >= 3.3` is verified, not just asserted — the suite and RuboCop both pass on
+the floor. CI exercises it on every change; a local run against whatever Ruby you happen to have does
+not. Note `bundle exec` resolves `ruby` from `PATH` rather than from the interpreter running Bundler,
+so use your version manager's exec wrapper to test a specific Ruby.
+
+The binding constraint on that floor is a *transitive* dep and is invisible in the gemspec:
+`parallel` (via rubocop) requires `>= 3.3`, sitting exactly on it — not simplecov's `>= 3.2`, which
+is merely the highest *direct* floor. Walk transitive deps before trusting the floor.
+
+There's no lockfile, so CI re-resolves every run. If `parallel` ever raises its floor above ours,
+Bundler backtracks to an older version rather than failing, and the 3.3 job quietly tests a different
+dependency set than 3.4/4.0 do. Expect silent skew, not a red build. Latent, not current — all three
+Rubies resolve an identical set today.
 
 ### No `Gemfile.lock`
 
