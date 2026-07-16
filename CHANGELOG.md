@@ -15,6 +15,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   parent or sibling includers. Previously all includers shared one global slot via class variables,
   so enabling logging on one class enabled it everywhere. The 1.0.0 entry below claimed "toggling
   logging per includer" but that was never delivered until now.
+- The default logger now writes to `$stdout` rather than the `STDOUT` constant, so it follows a
+  reassigned `$stdout` (test capture, daemonization). Reassign `$stdout` before the logger is first
+  built, or before `reset_config!`, to redirect the default output.
+- `LogSwitch::VERSION` is now frozen (`LogSwitch::VERSION.frozen?` is `true`); it was mutable before.
 
 ### Fixed
 
