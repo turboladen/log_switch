@@ -9,10 +9,8 @@ Gem::Specification.new do |s|
   s.authors = ['Steve Loveless']
   s.homepage = 'https://github.com/turboladen/log_switch'
   s.email = %w[steve.loveless@gmail.com]
-  s.summary = 'Extends a class for singleton style logging that can easily be
-                 turned on and off.'
-  s.description = 'Extends a class for singleton style logging that can
-                     easily be turned on and off.'
+  s.summary = 'Extends a class for singleton style logging that can easily be turned on and off.'
+  s.description = 'Mixes a shared logger into a class or module and toggles its logging on and off programmatically.'
 
   s.license = 'Unlicense'
   s.required_ruby_version = '>= 3.3'
@@ -23,8 +21,8 @@ Gem::Specification.new do |s|
     'rubygems_mfa_required' => 'true'
   }
 
-  s.files = Dir.glob('{lib,spec}/**/*') +
-            %w[CHANGELOG.md Gemfile LICENSE README.md log_switch.gemspec Rakefile]
+  s.files = Dir.glob('lib/**/*').select { |f| File.file?(f) } +
+            %w[CHANGELOG.md LICENSE README.md log_switch.gemspec]
 
   s.require_paths = %w[lib]
 
