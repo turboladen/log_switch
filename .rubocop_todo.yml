@@ -36,11 +36,6 @@ Style/BlockDelimiters:
   Exclude:
     - 'lib/log_switch.rb'
 
-# Offense count: 10
-Style/ClassVars:
-  Exclude:
-    - 'lib/log_switch.rb'
-
 # Offense count: 2
 # Configuration parameters: AllowedConstants.
 Style/Documentation:

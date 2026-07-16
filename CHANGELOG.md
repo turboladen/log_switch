@@ -7,6 +7,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** configuration is now per-includer with live inheritance. Each class or module that
+  includes `LogSwitch` (directly or through a module that includes it) reads each setting from its
+  parent in the include chain until it assigns its own value; writes are local and never affect the
+  parent or sibling includers. Previously all includers shared one global slot via class variables,
+  so enabling logging on one class enabled it everywhere. The 1.0.0 entry below claimed "toggling
+  logging per includer" but that was never delivered until now.
+
+### Fixed
+
+- `log_class_name = false` now sticks. The reader memoized with `||=` against a `true` default, so a
+  stored `false` was flipped back to `true` on the next read.
+- `before_log=` now keeps the most recently assigned hook. It memoized with `||=`, silently
+  discarding every assignment after the first.
+
 ## [1.1.0] - 2026-07-15
 
 ### Added

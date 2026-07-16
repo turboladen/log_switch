@@ -3,17 +3,45 @@ require_relative 'log_switch/version'
 
 # LogSwitch mixes a logger into a class/module and, most importantly, allows for
 # turning off logging programmatically.  See README.md for more info.
+#
+# Configuration is per-includer with live inheritance: an includer reads each
+# setting from its parent in the include chain (up to the library defaults)
+# until it assigns its own value, at which point the write shadows the parent
+# locally without affecting the parent or any sibling includer.
 module LogSwitch
-  def self.included(base)
-    @includers ||= []
-    @includers << base
-    base.extend ClassMethods
-    base.send(:include, InstanceMethods)
+  # The singleton instance variables that hold per-includer configuration.
+  # {reset_config!} clears these to restore fall-through to the defaults; note
+  # +@log_switch_parent+ is structural and is deliberately not in this list.
+  CONFIG_VARIABLES = %i[
+    @logging_enabled
+    @default_log_level
+    @log_class_name
+    @logger
+    @before_block
+  ].freeze
 
-    base.class_eval do
-      def self.included(b)
-        b.extend ClassMethods
-        b.send :include, InstanceMethods
+  def self.included(base)
+    register_includer(base, nil)
+  end
+
+  # Extends +includer+ with the config/instance API and records +parent+ as the
+  # next link in its config fall-through chain (+nil+ for a direct includer,
+  # whose reads fall through to the library defaults).
+  #
+  # This redefines +self.included+ on every includer so the mixin cascades to
+  # arbitrary depth: including a LogSwitch-including module elsewhere propagates
+  # both method sets and the parent link. A consequence is that an intermediate
+  # cascading module defining its own +self.included+ is unsupported -- this
+  # redefinition shadows it.
+  def self.register_includer(includer, parent)
+    (@includers ||= []) << includer
+    includer.instance_variable_set(:@log_switch_parent, parent)
+    includer.extend ClassMethods
+    includer.send(:include, InstanceMethods)
+
+    includer.class_eval do
+      def self.included(other)
+        LogSwitch.register_includer(other, self)
       end
     end
   end
@@ -27,24 +55,22 @@ module LogSwitch
     @logger = new_logger
   end
 
-  # Sets back to defaults.
+  # Sets back to defaults by clearing every includer's local config, so reads
+  # fall through to the library defaults again.
   def self.reset_config!
     self.logger = ::Logger.new STDOUT
 
-    @includers.each do |klass|
-      klass.logging_enabled = false
-      klass.log_class_name = true
+    (@includers ||= []).each do |includer|
+      CONFIG_VARIABLES.each do |ivar|
+        includer.send(:remove_instance_variable, ivar) if includer.instance_variable_defined?(ivar)
+      end
     end
   end
 
   module ClassMethods
-    # TODO: broken -- the class variables below are declared in this module body,
-    #   so they live on ClassMethods itself and every includer shares one slot:
-    #   `A.logging_enabled = true` also enables B.  Intent is per-includer config.
-
     # @param value [Boolean]
     def logging_enabled
-      @@logging_enabled ||= false
+      read_config(:@logging_enabled, :logging_enabled) { false }
     end
 
     # Tells whether logging is turned on or not.
@@ -58,17 +84,17 @@ module LogSwitch
     #
     # @param value [Boolean]
     def logging_enabled=(value)
-      @@logging_enabled = value
+      @logging_enabled = value
     end
 
     # @return [Symbol] The current default log level.  Starts off as :debug.
     def default_log_level
-      @@default_log_level ||= :debug
+      read_config(:@default_log_level, :default_log_level) { :debug }
     end
 
     # @param level [Symbol]
     def default_log_level=(level)
-      @@default_log_level = level
+      @default_log_level = level
     end
 
     # @return [Boolean] Tells whether logging of the class name with the log
@@ -77,23 +103,21 @@ module LogSwitch
       log_class_name
     end
 
-    # TODO: broken -- `||=` against a truthy default overwrites a stored `false`
-    #   on the next read, so `log_class_name = false` never sticks.
     def log_class_name
-      @@log_class_name ||= true
+      read_config(:@log_class_name, :log_class_name) { true }
     end
 
     # Toggle prepending the class name of the #log caller to the log message.
     def log_class_name=(value)
-      @@log_class_name = value
+      @log_class_name = value
     end
 
     def logger
-      @@logger ||= LogSwitch.logger
+      read_config(:@logger, :logger) { LogSwitch.logger }
     end
 
     def logger=(new_logger)
-      @@logger = new_logger
+      @logger = new_logger
     end
 
     # {#log} calls the block given to this method before it logs every time.
@@ -103,14 +127,26 @@ module LogSwitch
     #
     # @param [Proc] block The block of code to execute before logging a message
     #   with {#log}.
-    # TODO: broken -- `||=` keeps only the first assignment, and #before_log
-    #   initialises the slot on first read, so later hooks are silently ignored.
     def before_log=(block)
-      @@before_block ||= block
+      @before_block = block
     end
 
     def before_log
-      @@before_block ||= Proc.new do; end
+      read_config(:@before_block, :before_log) { proc {} }
+    end
+
+    private
+
+    # Reads a config value with live fall-through: the includer's own value if
+    # set, else the parent's (which applies its own fall-through, composing to
+    # any depth), else the library default from the block.
+    def read_config(ivar, reader)
+      return instance_variable_get(ivar) if instance_variable_defined?(ivar)
+
+      parent = @log_switch_parent
+      return parent.public_send(reader) if parent
+
+      yield
     end
   end
 
