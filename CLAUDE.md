@@ -6,8 +6,9 @@ repository.
 ## Overview
 
 `log_switch` is a small Ruby gem (~150 LOC in `lib/log_switch.rb`) that mixes a shared logger into a
-class and lets logging be switched on/off programmatically. Last released 1.0.0 (2014). The dev
-toolchain sat broken for a decade and has been revived — Bundler works; see Commands.
+class and lets logging be switched on/off programmatically. Last released 1.1.0 (2026), which broke
+a decade of silence after 1.0.0 (2014); the dev toolchain sat broken for most of that gap and has
+been revived — Bundler works; see Commands.
 
 ## Commands
 
@@ -17,7 +18,7 @@ Bundler is the supported path and works on current Ruby:
 bundle install
 
 # Full suite (18 examples, 0 failures, 1 pending)
-bundle exec rake              # default task -> :test -> [:spec, :rubocop]
+bundle exec rake              # default task -> :test -> [:spec, :rubocop, :dprint]
 bundle exec rspec             # the same suite, directly
 bundle exec rubocop           # the linter on its own
 
@@ -30,8 +31,9 @@ write a gitignored `coverage/` directory via SimpleCov.
 
 ### CI defines the supported Rubies — this file does not
 
-`.github/workflows/ci.yml` is the authority on the matrix; it runs `rake spec` per Ruby plus
-`rake rubocop` once. Don't restate the matrix here — it will rot.
+`.github/workflows/ci.yml` is the authority on both the matrix and which gates run — read it rather
+than trusting a summary here. Don't restate either: an earlier revision listed the jobs and went
+stale once per gate added after it.
 
 `required_ruby_version >= 3.3` is verified, not just asserted — the suite and RuboCop both pass on
 the floor. CI exercises it on every change; a local run against whatever Ruby you happen to have
@@ -67,8 +69,9 @@ revisions of this file documented an `-Ispec` that does nothing.)
 `lib/` off the filesystem instead of resolving the gem through Bundler, so a missing runtime
 dependency is invisible. That is exactly how the missing `logger` dep went undetected — the gem was
 unusable on Ruby 4.0 for every Bundler-managed consumer while this command reported a green 18/0/1.
-To test packaging, install the gem into a scratch consumer bundle via a `path:` source and require
-it.
+CI's `package` job is the gate for that class of defect now — it builds the gem, unpacks it, and
+requires it from a consumer bundle holding only the declared runtime deps. To check packaging
+locally, reproduce that job; never infer it from this command.
 
 Coverage differs between the two paths (50/65 under Bundler, 52/67 bypassed). Not a defect: the
 `gemspec` directive makes Bundler `require` `log_switch/version` before `SimpleCov.start`, so
@@ -76,13 +79,14 @@ version.rb's 2 lines go untracked.
 
 ### RuboCop is the linter
 
-`rake test` runs `[:spec, :rubocop]`. Everything outside `lib/` is clean. The remaining debt is 24
-offenses in `lib/` — 23 quarantined in `.rubocop_todo.yml`, and one
+`rake test` runs `[:spec, :rubocop, :dprint]`. Everything outside `lib/` is clean. The remaining
+debt is 24 offenses in `lib/` — 23 quarantined in `.rubocop_todo.yml`, and one
 (`Layout/SpaceAroundEqualsInParameterDefault`) in `.rubocop.yml`, which explains in place why it has
 to live there. The gate is green over them; a new violation still fails it.
 
 They are held for one reason: **`lib/log_switch.rb`'s behaviour must not drift from the published
-1.0 API.** Only its doc comment has been touched since 1.0.0; every executable line is unchanged.
+API.** Only its doc comment has been touched since 1.0.0; every executable line is unchanged, and
+1.1.0 shipped it that way (`git diff v1.0.0 -- lib/log_switch.rb` is comments only).
 Several of the offenses are ordinary cosmetics that would be fine to fix elsewhere. The ones that
 are not: `Style/ClassVars` x10 is RuboCop independently rediscovering the config-state bug (see
 Architecture); `Style/GlobalStdStream` x2 would change behaviour (`STDOUT` cannot be reassigned,
@@ -150,9 +154,8 @@ end
 ```
 
 So `log_class_name = false` never sticks — the reader flips it back to `true`. This is the cause of
-the spec at `spec/log_switch_spec.rb:64` marked
-`pending "Can't figure out why this doesn't pass. It
-works live..."`. It does not work live; the
+the `it 'can be set to false'` spec in `spec/log_switch_spec.rb`, marked
+`pending "Can't figure out why this doesn't pass. It works live..."`. It does not work live; the
 reader is the bug. `logging_enabled` has the same shape but is harmless only because its default
 (`false`) is already falsy. `before_log=` has a related defect: it's written
 `@@before_block ||= block`, so the setter silently ignores every hook after the first.
@@ -165,12 +168,17 @@ place.
 - Docs are Markdown. YARD tags (`@param`, `@return`) annotate the source.
 - `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/); newest first — add an
   entry for user-facing changes, and a link reference for each new version.
-- The version lives in `lib/log_switch/version.rb` and is asserted by a spec, so bumping it means
-  updating `spec/log_switch_spec.rb:7` too.
-- The gemspec's `%q()` summary/description span two source lines, so their indentation and trailing
-  whitespace **are** the published strings. After any gemspec change, diff the _loaded_ spec
-  (`Gem::Specification.load`), not the source — a formatting cop silently altered `description` this
-  way.
+- The version lives in `lib/log_switch/version.rb` and is asserted by a spec
+  (`specify { expect(LogSwitch::VERSION).to eq '...' }` in `spec/log_switch_spec.rb`), so bumping it
+  means updating that expectation too. Cited by name, not line: an earlier revision pointed at a
+  line number that had drifted onto the `describe`.
+- The gemspec's `summary` and `description` each span two source lines. **After any gemspec change,
+  diff the _loaded_ spec (`Gem::Specification.load`), not the source** — a formatting cop silently
+  altered `description` this way. Only `description` is actually at risk: RubyGems normalizes on
+  assignment, so `summary=` collapses the newline and indentation to a single space (81 bytes, no
+  newline) while `description=` publishes them verbatim (102 bytes, embedded `\n` plus 21 spaces).
+  Verified against `Gem::Specification.load`, not assumed — an earlier revision of this line claimed
+  the indentation was published for both.
 - `Gem::Specification#validate` **raises** on an `s.files` entry that doesn't exist; it does not
   warn. Edit the list and the filesystem in the same step.
 
