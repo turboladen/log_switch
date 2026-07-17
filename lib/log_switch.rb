@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'logger'
 require_relative 'log_switch/version'
 
@@ -47,9 +49,9 @@ module LogSwitch
     end
   end
 
-  # Defaults to a +Logger+ writing to STDOUT.
+  # Defaults to a +Logger+ writing to +$stdout+.
   def self.logger
-    @logger ||= ::Logger.new STDOUT
+    @logger ||= ::Logger.new $stdout
   end
 
   def self.logger=(new_logger)
@@ -59,7 +61,7 @@ module LogSwitch
   # Sets back to defaults by clearing every includer's local config, so reads
   # fall through to the library defaults again.
   def self.reset_config!
-    self.logger = ::Logger.new STDOUT
+    self.logger = ::Logger.new $stdout
 
     (@includers ||= []).each do |includer|
       CONFIG_VARIABLES.each do |ivar|
@@ -68,6 +70,7 @@ module LogSwitch
     end
   end
 
+  # Per-includer configuration API mixed onto each includer as class methods.
   module ClassMethods
     # Shared no-op default for {#before_log}, so an unconfigured hook costs no
     # per-call allocation when {#log} invokes +before_log.call+.
@@ -155,36 +158,37 @@ module LogSwitch
     end
   end
 
+  # Instance-level logging API (#log and its helpers) mixed into each includer.
   module InstanceMethods
     def logger
       self.class.logger
     end
 
     # Logs a message using the level provided.  If no level provided, use
-    # +@log_level+.
+    # the class's +default_log_level+.
     #
     # @param [String] message The message to log.
     # @param [Symbol] level The log level to send to your Logger.
-    def log(message, level=nil)
+    def log(message, level = nil)
       level ||= self.class.default_log_level
 
       self.class.before_log.call
       yield if block_given?
 
-      if self.class.logging_enabled?
-        if message.respond_to? :each_line
-          message.each_line do |line|
-            msg = filter_class_name(line.chomp)
-            logger.send(level, msg)
-          end
-        else
-          message = filter_class_name(message)
-          logger.send(level, message)
-        end
-      end
+      return unless self.class.logging_enabled?
+
+      write_message(message, level)
     end
 
     private
+
+    def write_message(message, level)
+      if message.respond_to?(:each_line)
+        message.each_line { |line| logger.send(level, filter_class_name(line.chomp)) }
+      else
+        logger.send(level, filter_class_name(message))
+      end
+    end
 
     def filter_class_name(message)
       if self.class.log_class_name?

@@ -32,23 +32,17 @@ Metrics/BlockLength:
 # inversion when a cop sees at least one correctly-styled instance
 # (`correct_style_detected`), and the survivors are incidental -- `{ two: 2 }` in
 # an array spec, `task test:` in the Rakefile, two `$LOAD_PATH` uses. Delete that
-# spec and the protection evaporates silently. These four lines make it
-# structural instead.
+# spec and the protection evaporates silently. These lines make it structural
+# instead.
+#
+# `Layout/SpaceAroundEqualsInParameterDefault` is one of the three; it previously
+# carried a lib Exclude (debt, now retired). `#log`'s `level = nil` default matches
+# policy, so the cop guards lib/ again and only the anti-inversion pin remains.
 Style/HashSyntax:
   EnforcedStyle: ruby19
 
 Style/SpecialGlobalVars:
   EnforcedStyle: use_english_names
 
-# This one also carries an Exclude, and that Exclude is debt, not policy --
-# the one deliberate exception to the split. `lib/log_switch.rb` must not drift
-# from the published 1.0 API, so its offense is excluded rather than fixed. It lives here and not in the todo because a regenerated todo drops
-# its own exclusion, the offense goes live, and `rake rubocop:autocorrect_all`
-# (which RuboCop::RakeTask exposes) would rewrite lib/.
-#
-# Tracked as the lib-cosmetic-style follow-up. DELETE the Exclude when that
-# lands, or the cop silently stops guarding lib/ forever.
 Layout/SpaceAroundEqualsInParameterDefault:
   EnforcedStyle: space
-  Exclude:
-    - "lib/log_switch.rb"

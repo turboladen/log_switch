@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'stringio'
 
 class IncluderClass; include LogSwitch; end
 
 describe LogSwitch do
   before { LogSwitch.reset_config! }
   specify { expect(LogSwitch::VERSION).to eq '2.0.0' }
+  specify { expect(LogSwitch::VERSION).to be_frozen }
 
   describe 'base class methods' do
     describe '.included' do
@@ -30,6 +32,20 @@ describe LogSwitch do
     describe '.logger' do
       it 'is a Logger by default' do
         expect(described_class.logger).to be_a Logger
+      end
+
+      it 'follows a reassigned $stdout' do
+        captured = StringIO.new
+        original = $stdout
+        begin
+          $stdout = captured
+          LogSwitch.reset_config!
+          LogSwitch.logger.warn('to captured stream')
+        ensure
+          $stdout = original
+        end
+
+        expect(captured.string).to include('to captured stream')
       end
     end
   end
