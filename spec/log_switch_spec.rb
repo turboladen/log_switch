@@ -6,13 +6,24 @@ class IncluderClass; include LogSwitch; end
 
 describe LogSwitch do
   before { LogSwitch.reset_config! }
-  specify { expect(LogSwitch::VERSION).to eq '1.1.0' }
+  specify { expect(LogSwitch::VERSION).to eq '2.0.0' }
 
   describe 'base class methods' do
     describe '.included' do
       it 'sets @includers on the class object that extended' do
         expect(described_class.instance_variable_get(:@includers))
           .to include(IncluderClass)
+      end
+
+      it 'registers an includer only once, even through multiple LogSwitch modules' do
+        m1 = Module.new { include LogSwitch }
+        m2 = Module.new { include LogSwitch }
+        klass = Class.new do
+          include m1
+          include m2
+        end
+        includers = described_class.instance_variable_get(:@includers)
+        expect(includers.count(klass)).to eq 1
       end
     end
 
@@ -63,8 +74,13 @@ describe LogSwitch do
       end
 
       it 'can be set to false' do
-        pending "Can't figure out why this doesn't pass. It works live..."
         described_class.log_class_name = false
+        expect(described_class.log_class_name).to eq false
+      end
+
+      it 'stays false across reads (the ||= reader bug)' do
+        described_class.log_class_name = false
+        described_class.log_class_name
         expect(described_class.log_class_name).to eq false
       end
     end
@@ -73,6 +89,18 @@ describe LogSwitch do
       it 'assigns the given block to @before_block' do
         described_class.before_log = proc { "I'm a block" }
         expect(described_class.before_log).to be_a Proc
+      end
+
+      it 'keeps the most recently assigned hook (not the first)' do
+        first = proc { 'first' }
+        second = proc { 'second' }
+        described_class.before_log = first
+        described_class.before_log = second
+        expect(described_class.before_log).to equal(second)
+      end
+
+      it 'returns a shared no-op default so an unset hook allocates nothing per read' do
+        expect(described_class.before_log).to equal(described_class.before_log)
       end
     end
 
@@ -126,6 +154,34 @@ describe LogSwitch do
           expect { subject.log ex }.to_not raise_exception
         end
       end
+    end
+  end
+
+  describe 'per-includer configuration' do
+    it 'does not leak config between sibling includers' do
+      a = Class.new { include LogSwitch }
+      b = Class.new { include LogSwitch }
+      a.logging_enabled = true
+      expect(b.logging_enabled?).to eq false
+    end
+
+    it 'inherits from the parent until the child sets its own value' do
+      parent = Module.new { include LogSwitch }
+      parent.logging_enabled = true
+      parent.default_log_level = :info
+      foo = Class.new { include parent }
+      bar = Class.new { include parent }
+
+      # Fall-through: children read the parent's values.
+      expect(foo.logging_enabled?).to eq true
+      expect(foo.default_log_level).to eq :info
+      expect(bar.logging_enabled?).to eq true
+
+      # A local write shadows the parent without touching parent or sibling.
+      foo.logging_enabled = false
+      expect(foo.logging_enabled?).to eq false
+      expect(bar.logging_enabled?).to eq true
+      expect(parent.logging_enabled?).to eq true
     end
   end
 end
