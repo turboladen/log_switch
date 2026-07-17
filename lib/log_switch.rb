@@ -165,7 +165,7 @@ module LogSwitch
     end
 
     # Logs a message using the level provided.  If no level provided, use
-    # +@log_level+.
+    # the class's +default_log_level+.
     #
     # @param [String] message The message to log.
     # @param [Symbol] level The log level to send to your Logger.

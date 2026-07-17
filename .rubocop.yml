@@ -20,7 +20,7 @@ Metrics/BlockLength:
   Exclude:
     - "spec/**/*"
 
-# The four cops below restate RuboCop's own defaults. They look redundant and
+# The three cops below restate RuboCop's own defaults. They look redundant and
 # are not: `--auto-gen-config` "resolves" a cop by writing an `EnforcedStyle`
 # into .rubocop_todo.yml that INVERTS the project's style for new code, and
 # `--auto-gen-only-exclude` does NOT prevent that (verified: it still emits
@@ -35,9 +35,9 @@ Metrics/BlockLength:
 # spec and the protection evaporates silently. These lines make it structural
 # instead.
 #
-# `Layout/SpaceAroundEqualsInParameterDefault` joined this group once its lib
-# Exclude was retired: `#log`'s `level = nil` default now matches policy, so the
-# cop guards lib/ again and only the anti-inversion pin remains.
+# `Layout/SpaceAroundEqualsInParameterDefault` is one of the three; it previously
+# carried a lib Exclude (debt, now retired). `#log`'s `level = nil` default matches
+# policy, so the cop guards lib/ again and only the anti-inversion pin remains.
 Style/HashSyntax:
   EnforcedStyle: ruby19
 
