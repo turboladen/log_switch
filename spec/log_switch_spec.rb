@@ -14,6 +14,17 @@ describe LogSwitch do
         expect(described_class.instance_variable_get(:@includers))
           .to include(IncluderClass)
       end
+
+      it 'registers an includer only once, even through multiple LogSwitch modules' do
+        m1 = Module.new { include LogSwitch }
+        m2 = Module.new { include LogSwitch }
+        klass = Class.new do
+          include m1
+          include m2
+        end
+        includers = described_class.instance_variable_get(:@includers)
+        expect(includers.count(klass)).to eq 1
+      end
     end
 
     describe '.logger' do
@@ -86,6 +97,10 @@ describe LogSwitch do
         described_class.before_log = first
         described_class.before_log = second
         expect(described_class.before_log).to equal(second)
+      end
+
+      it 'returns a shared no-op default so an unset hook allocates nothing per read' do
+        expect(described_class.before_log).to equal(described_class.before_log)
       end
     end
 

@@ -34,7 +34,8 @@ module LogSwitch
   # cascading module defining its own +self.included+ is unsupported -- this
   # redefinition shadows it.
   def self.register_includer(includer, parent)
-    (@includers ||= []) << includer
+    @includers ||= []
+    @includers << includer unless @includers.include?(includer)
     includer.instance_variable_set(:@log_switch_parent, parent)
     includer.extend ClassMethods
     includer.send(:include, InstanceMethods)
@@ -68,6 +69,10 @@ module LogSwitch
   end
 
   module ClassMethods
+    # Shared no-op default for {#before_log}, so an unconfigured hook costs no
+    # per-call allocation when {#log} invokes +before_log.call+.
+    NULL_HOOK = proc {}
+
     # @param value [Boolean]
     def logging_enabled
       read_config(:@logging_enabled, :logging_enabled) { false }
@@ -132,7 +137,7 @@ module LogSwitch
     end
 
     def before_log
-      read_config(:@before_block, :before_log) { proc {} }
+      read_config(:@before_block, :before_log) { NULL_HOOK }
     end
 
     private
