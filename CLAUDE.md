@@ -5,10 +5,11 @@ repository.
 
 ## Overview
 
-`log_switch` is a small Ruby gem (~150 LOC in `lib/log_switch.rb`) that mixes a shared logger into a
-class and lets logging be switched on/off programmatically. Last released 1.1.0 (2026), which broke
-a decade of silence after 1.0.0 (2014); the dev toolchain sat broken for most of that gap and has
-been revived — Bundler works; see Commands.
+`log_switch` is a small Ruby gem (~200 LOC in `lib/log_switch.rb`) that mixes a logger into a
+class/module and lets logging be switched on/off programmatically, per includer. Develop is at
+**2.0.0 (unreleased)** — a breaking change that made config per-includer with live inheritance (see
+Architecture); last released 1.1.0 (2026), which broke a decade of silence after 1.0.0 (2014); the
+dev toolchain sat broken for most of that gap and has been revived — Bundler works; see Commands.
 
 ## Commands
 
@@ -17,7 +18,7 @@ Bundler is the supported path and works on current Ruby:
 ```sh
 bundle install
 
-# Full suite (18 examples, 0 failures, 1 pending)
+# Full suite (26 examples, 0 failures, 0 pending)
 bundle exec rake              # default task -> :test -> [:spec, :rubocop, :dprint]
 bundle exec rspec             # the same suite, directly
 bundle exec rubocop           # the linter on its own
@@ -68,32 +69,30 @@ revisions of this file documented an `-Ispec` that does nothing.)
 **This bypass cannot see packaging defects, so never conclude the gem is healthy from it.** It loads
 `lib/` off the filesystem instead of resolving the gem through Bundler, so a missing runtime
 dependency is invisible. That is exactly how the missing `logger` dep went undetected — the gem was
-unusable on Ruby 4.0 for every Bundler-managed consumer while this command reported a green 18/0/1.
+unusable on Ruby 4.0 for every Bundler-managed consumer while this command reported a green suite.
 CI's `package` job is the gate for that class of defect now — it builds the gem, unpacks it, and
 requires it from a consumer bundle holding only the declared runtime deps. To check packaging
 locally, reproduce that job; never infer it from this command.
 
-Coverage differs between the two paths (50/65 under Bundler, 52/67 bypassed). Not a defect: the
+Coverage differs between the two paths (64/74 under Bundler, 66/76 bypassed). Not a defect: the
 `gemspec` directive makes Bundler `require` `log_switch/version` before `SimpleCov.start`, so
 version.rb's 2 lines go untracked.
 
 ### RuboCop is the linter
 
-`rake test` runs `[:spec, :rubocop, :dprint]`. Everything outside `lib/` is clean. The remaining
-debt is 24 offenses in `lib/` — 23 quarantined in `.rubocop_todo.yml`, and one
-(`Layout/SpaceAroundEqualsInParameterDefault`) in `.rubocop.yml`, which explains in place why it has
-to live there. The gate is green over them; a new violation still fails it.
+`rake test` runs `[:spec, :rubocop, :dprint]`. The whole tree — `lib/` included — is now clean:
+`.rubocop_todo.yml` is empty, kept only as the inherited parent so `.rubocop.yml`'s pins can override
+a regeneration (see below). A new violation still fails the gate.
 
-They are held for one reason: **`lib/log_switch.rb`'s behaviour must not drift from the published
-API.** Only its doc comment has been touched since 1.0.0; every executable line is unchanged, and
-1.1.0 shipped it that way (`git diff v1.0.0 -- lib/log_switch.rb` is comments only).
-Several of the offenses are ordinary cosmetics that would be fine to fix elsewhere. The ones that
-are not: `Style/ClassVars` x10 is RuboCop independently rediscovering the config-state bug (see
-Architecture); `Style/GlobalStdStream` x2 would change behaviour (`STDOUT` cannot be reassigned,
-`$stdout` can); `Metrics/AbcSize` + `MethodLength` are a design question about `#log`; and
-`Style/MutableConstant` + `Style/FrozenStringLiteralComment` on `version.rb` would flip
-`LogSwitch::VERSION.frozen?` false to true, which is API-observable. Each is filed as a follow-up.
-Note `RuboCop::RakeTask` exposes `rake rubocop:autocorrect_all`, which would rewrite `lib/`.
+For years `lib/log_switch.rb` was held byte-identical to its 1.0.0 release, so all its offenses sat
+quarantined rather than fixed. **2.0.0 deliberately retired that invariant** — it was the release that
+could carry breaking change. The config-state refactor cleared `Style/ClassVars` by removing the class
+variables outright (their absence is now the regression test for the config-leak bug); `#log` was
+split into a `write_message` helper + guard clause for `Metrics/AbcSize`/`MethodLength`/`GuardClause`;
+`STDOUT` became `$stdout` (`Style/GlobalStdStream` — the default logger now follows a reassigned
+`$stdout`); and `frozen_string_literal` went tree-wide, which froze `LogSwitch::VERSION` (API-observable,
+which is why it shipped in the major). `RuboCop::RakeTask` still exposes `rake rubocop:autocorrect_all`
+— hand-edit `lib/` instead so behavioral changes stay deliberate.
 
 `tailor` used to be wired in here and was removed. It installed fine — pure Ruby, no
 `required_ruby_version` — so "tailor doesn't build" (an old claim in this file) was never true. The
@@ -102,8 +101,11 @@ real reason is a runtime dependency cycle back onto this gem, and the versions d
 `~> 0.3.0`, which it does not. The cycle silently pinned the linter to a 2012-era release.
 
 **`.rubocop.yml` is policy; `.rubocop_todo.yml` is debt.** Policy is what we choose never to enforce
-(RSpec block length) or always enforce (modern style). Debt is what we intend to fix. One entry
-deliberately breaks that split and says so in place.
+(RSpec block length) or always enforce (modern style). Debt is what we intend to fix — and it is now
+empty. The lone entry that used to straddle the split
+(`Layout/SpaceAroundEqualsInParameterDefault`, a policy pin carrying a debt `Exclude` for `lib/`)
+lost its Exclude when `lib/` was cleaned; it is now a plain defensive-default pin alongside
+`Style/HashSyntax` and `Style/SpecialGlobalVars`.
 
 To regenerate the todo:
 
@@ -122,46 +124,48 @@ pins in `.rubocop.yml` exist to override this and must win.
 
 Single file: `lib/log_switch.rb`, defining three pieces.
 
-- `LogSwitch.included(base)` — the entry point. Extends `base` with `ClassMethods`, includes
-  `InstanceMethods`, records `base` in `@includers` (used only by `reset_config!`), and **redefines
-  `base.included`** so the mixin cascades: including `LogSwitch` into your own module, then
-  including that module elsewhere, propagates both method sets.
+- `LogSwitch.included(base)` delegates to `LogSwitch.register_includer(includer, parent)` — the
+  entry point. It records `includer` in `@includers` (used only by `reset_config!`, de-duplicated),
+  sets `@log_switch_parent` (the config fall-through link — `nil` for a direct includer), extends
+  `ClassMethods`, includes `InstanceMethods`, and **redefines `includer.included`** so the mixin
+  cascades to arbitrary depth: including a LogSwitch-including module elsewhere propagates both method
+  sets and the parent link. (A consequence: an intermediate cascading module that defines its own
+  `self.included` is unsupported — this redefinition shadows it.)
 - `ClassMethods` — the config surface: `logging_enabled`, `default_log_level`, `log_class_name`,
-  `logger`, `before_log`.
+  `logger`, `before_log`. Each reader is `read_config(ivar, reader) { default }` (see below).
 - `InstanceMethods#log(message, level = nil)` — calls the `before_log` hook, yields an optional
-  block, and only writes if `logging_enabled?`. Multi-line input is split via `each_line` and logged
-  one line per call; anything not responding to `each_line` is logged whole.
+  block, then `return unless logging_enabled?` and delegates to the private `write_message`.
+  Multi-line input is split via `each_line` and logged one line per call; anything not responding to
+  `each_line` is logged whole.
 
-### Config state is global, not per-includer
+### Config state is per-includer with live inheritance (2.0.0)
 
-`ClassMethods` stores config in **class variables** (`@@logging_enabled`, `@@log_class_name`,
-`@@default_log_level`, `@@logger`, `@@before_block`). Because they're declared in the `ClassMethods`
-module body, they live on that module — every class that includes `LogSwitch` shares one slot.
-Verified: `A.logging_enabled = true` makes `B.logging_enabled?` return `true`.
+Config lives in **per-includer singleton ivars** (`@logging_enabled`, `@log_class_name`,
+`@default_log_level`, `@logger`, `@before_block`) on each includer object — not class variables.
+Because `ClassMethods` is `extend`ed onto each includer, method bodies run with `self` = that
+includer, so the ivars are naturally per-class. Verified: `A.logging_enabled = true` leaves
+`B.logging_enabled?` `false`.
 
-This contradicts CHANGELOG.md's 1.0.0 claim that the rewrite "allows toggling logging per includer."
-It does not. Treat any per-class isolation requirement as a real design change (`@ivars` on the
-singleton, or `class_attribute`-style inheritance), not a tweak.
+Reads fall through the include chain via the private `read_config(ivar, reader)`: return the local
+ivar if `instance_variable_defined?`, else `@log_switch_parent.public_send(reader)` (which applies
+its own fall-through, composing to any depth), else the block default. Writers are plain local
+assignments, so a write shadows the parent locally without touching the parent or any sibling.
+`reset_config!` `remove_instance_variable`s each of `CONFIG_VARIABLES` (restoring fall-through) but
+deliberately keeps `@log_switch_parent`, which is structural.
 
-### The `||=` default-reader bug
+This is what 1.0.0's CHANGELOG claimed ("toggling logging per includer") but never delivered; the
+2.0.0 entry corrects the record forward without rewriting the 1.0.0 entry.
 
-Readers memoize with `||=` against a truthy default:
+Three bugs the old class-variable design carried, all now fixed with regression specs (this is the
+substance of the 2.0.0 config refactor): config leaked across every includer (shared `@@` slot);
+`log_class_name = false` never stuck (the `||= true` reader flipped a stored `false` back); and
+`before_log=` silently ignored every hook after the first (`@@before_block ||= block`). The readers
+no longer memoize with `||=`, so a stored `false`/`nil` is honored — note the flip side, filed as a
+follow-up: `logger = nil` now sticks and would `NoMethodError` in `#log`.
 
-```ruby
-def log_class_name
-  @@log_class_name ||= true    # a stored `false` is overwritten on the next read
-end
-```
-
-So `log_class_name = false` never sticks — the reader flips it back to `true`. This is the cause of
-the `it 'can be set to false'` spec in `spec/log_switch_spec.rb`, marked
-`pending "Can't figure out why this doesn't pass. It works live..."`. It does not work live; the
-reader is the bug. `logging_enabled` has the same shape but is harmless only because its default
-(`false`) is already falsy. `before_log=` has a related defect: it's written
-`@@before_block ||= block`, so the setter silently ignores every hook after the first.
-
-Fixing the reader will un-pend that spec — update the spec rather than leaving the `pending` in
-place.
+Two design edges of the per-includer model are tracked as open follow-ups, not bugs to fix blindly:
+a **subclass** of an includer does not inherit its config (singleton ivars aren't inherited); and
+`@includers` holds every includer by strong reference forever.
 
 ## Conventions
 
@@ -172,13 +176,13 @@ place.
   (`specify { expect(LogSwitch::VERSION).to eq '...' }` in `spec/log_switch_spec.rb`), so bumping it
   means updating that expectation too. Cited by name, not line: an earlier revision pointed at a
   line number that had drifted onto the `describe`.
-- The gemspec's `summary` and `description` each span two source lines. **After any gemspec change,
-  diff the _loaded_ spec (`Gem::Specification.load`), not the source** — a formatting cop silently
-  altered `description` this way. Only `description` is actually at risk: RubyGems normalizes on
-  assignment, so `summary=` collapses the newline and indentation to a single space (81 bytes, no
-  newline) while `description=` publishes them verbatim (102 bytes, embedded `\n` plus 21 spaces).
-  Verified against `Gem::Specification.load`, not assumed — an earlier revision of this line claimed
-  the indentation was published for both.
+- The gemspec's `summary` and `description` are single source lines and deliberately distinct
+  strings. They were multi-line literals until 2.0.0, where `description` published an embedded
+  newline + ~20 spaces of indentation to rubygems.org; collapsing it fixed that, and it is worded
+  differently from `summary` because byte-identical strings make `gem build` warn. **After any
+  gemspec change, diff the _loaded_ spec (`Gem::Specification.load`), not the source** — a formatting
+  cop once silently altered `description` that way. RubyGems normalizes `summary=` on assignment but
+  publishes `description=` verbatim, so keep both on one line.
 - `Gem::Specification#validate` **raises** on an `s.files` entry that doesn't exist; it does not
   warn. Edit the list and the filesystem in the same step.
 
