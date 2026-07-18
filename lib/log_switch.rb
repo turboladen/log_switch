@@ -30,21 +30,35 @@ module LogSwitch
   # next link in its config fall-through chain (+nil+ for a direct includer,
   # whose reads fall through to the library defaults).
   #
-  # This redefines +self.included+ on every includer so the mixin cascades to
-  # arbitrary depth: including a LogSwitch-including module elsewhere propagates
-  # both method sets and the parent link. A consequence is that an intermediate
-  # cascading module defining its own +self.included+ is unsupported -- this
-  # redefinition shadows it.
+  # +includer+ is held weakly in +@includers+ (an +ObjectSpace::WeakMap+ keyed
+  # by the includer, so it can be garbage-collected) purely so {reset_config!}
+  # can find it; key identity de-duplicates re-registration. Re-registering an
+  # existing includer is idempotent -- it re-points the parent link and re-runs
+  # the (idempotent) extend/include/hook setup.
   def self.register_includer(includer, parent)
-    @includers ||= []
-    @includers << includer unless @includers.include?(includer)
+    (@includers ||= ObjectSpace::WeakMap.new)[includer] = true
     includer.instance_variable_set(:@log_switch_parent, parent)
     includer.extend ClassMethods
     includer.send(:include, InstanceMethods)
+    define_cascade_hooks(includer)
+  end
 
+  # Redefines +self.included+ and +self.inherited+ on +includer+ so the mixin
+  # cascades to arbitrary depth through both paths: including a LogSwitch-including
+  # module elsewhere, and subclassing an includer, each propagate the method sets
+  # and the parent link (a subclass's parent is its superclass, giving it the same
+  # live config fall-through). A consequence is that an intermediate class or module
+  # defining its own +self.included+ or +self.inherited+ is unsupported -- these
+  # redefinitions shadow it.
+  def self.define_cascade_hooks(includer)
     includer.class_eval do
       def self.included(other)
         LogSwitch.register_includer(other, self)
+      end
+
+      def self.inherited(subclass)
+        super
+        LogSwitch.register_includer(subclass, self)
       end
     end
   end
@@ -63,7 +77,7 @@ module LogSwitch
   def self.reset_config!
     self.logger = ::Logger.new $stdout
 
-    (@includers ||= []).each do |includer|
+    (@includers ||= ObjectSpace::WeakMap.new).each_key do |includer|
       CONFIG_VARIABLES.each do |ivar|
         includer.send(:remove_instance_variable, ivar) if includer.instance_variable_defined?(ivar)
       end

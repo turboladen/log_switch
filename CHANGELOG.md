@@ -10,14 +10,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - **Breaking:** configuration is now per-includer with live inheritance. Each class or module that
-  includes `LogSwitch` (directly or through a module that includes it) reads each setting from its
-  parent in the include chain until it assigns its own value; writes are local and never affect the
-  parent or sibling includers. Previously all includers shared one global slot via class variables,
-  so enabling logging on one class enabled it everywhere. The 1.0.0 entry below claimed "toggling
-  logging per includer" but that was never delivered until now.
+  includes `LogSwitch` (directly, through a module that includes it, or by subclassing an includer)
+  reads each setting from its parent in the include chain until it assigns its own value; writes are
+  local and never affect the parent or sibling includers. Previously all includers shared one global
+  slot via class variables, so enabling logging on one class enabled it everywhere. The 1.0.0 entry
+  below claimed "toggling logging per includer" but that was never delivered until now.
 - The default logger now writes to `$stdout` rather than the `STDOUT` constant, so it follows a
   reassigned `$stdout` (test capture, daemonization). Reassign `$stdout` before the logger is first
   built, or before `reset_config!`, to redirect the default output.
+- Includers are now held via `ObjectSpace::WeakMap` instead of a strong-referenced Array, so classes
+  and modules that include `LogSwitch` (including anonymous ones) can be garbage-collected.
 - `LogSwitch::VERSION` is now frozen (`LogSwitch::VERSION.frozen?` is `true`); it was mutable before.
 
 ### Fixed

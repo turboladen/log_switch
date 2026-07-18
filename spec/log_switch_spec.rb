@@ -13,7 +13,7 @@ describe LogSwitch do
   describe 'base class methods' do
     describe '.included' do
       it 'sets @includers on the class object that extended' do
-        expect(described_class.instance_variable_get(:@includers))
+        expect(described_class.instance_variable_get(:@includers).keys)
           .to include(IncluderClass)
       end
 
@@ -25,7 +25,7 @@ describe LogSwitch do
           include m2
         end
         includers = described_class.instance_variable_get(:@includers)
-        expect(includers.count(klass)).to eq 1
+        expect(includers.keys.count(klass)).to eq 1
       end
     end
 
@@ -198,6 +198,36 @@ describe LogSwitch do
       expect(foo.logging_enabled?).to eq false
       expect(bar.logging_enabled?).to eq true
       expect(parent.logging_enabled?).to eq true
+    end
+  end
+
+  describe 'subclass configuration inheritance' do
+    it 'inherits config from its superclass until it sets its own' do
+      base = Class.new { include LogSwitch }
+      base.logging_enabled = true
+      base.default_log_level = :info
+      child = Class.new(base)
+
+      expect(child.logging_enabled?).to eq true
+      expect(child.default_log_level).to eq :info
+    end
+
+    it 'shadows the superclass with a local write, without touching it' do
+      base = Class.new { include LogSwitch }
+      base.logging_enabled = true
+      child = Class.new(base)
+
+      child.logging_enabled = false
+      expect(child.logging_enabled?).to eq false
+      expect(base.logging_enabled?).to eq true
+    end
+
+    it 'cascades to arbitrary subclass depth' do
+      base = Class.new { include LogSwitch }
+      base.logging_enabled = true
+      grandchild = Class.new(Class.new(base))
+
+      expect(grandchild.logging_enabled?).to eq true
     end
   end
 end
