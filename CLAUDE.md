@@ -125,12 +125,15 @@ pins in `.rubocop.yml` exist to override this and must win.
 Single file: `lib/log_switch.rb`, defining three pieces.
 
 - `LogSwitch.included(base)` delegates to `LogSwitch.register_includer(includer, parent)` — the
-  entry point. It records `includer` in `@includers` (used only by `reset_config!`, de-duplicated),
-  sets `@log_switch_parent` (the config fall-through link — `nil` for a direct includer), extends
-  `ClassMethods`, includes `InstanceMethods`, and **redefines `includer.included`** so the mixin
-  cascades to arbitrary depth: including a LogSwitch-including module elsewhere propagates both method
-  sets and the parent link. (A consequence: an intermediate cascading module that defines its own
-  `self.included` is unsupported — this redefinition shadows it.)
+  entry point. It records `includer` in `@includers` — an `ObjectSpace::WeakMap` (weak refs, so
+  includers can be GC'd), used only by `reset_config!`, de-duplicated by key identity — sets
+  `@log_switch_parent` (the config fall-through link — `nil` for a direct includer), extends
+  `ClassMethods`, includes `InstanceMethods`, and (via the extracted `define_cascade_hooks`)
+  **redefines both `includer.included` and `includer.inherited`** so the mixin cascades to arbitrary
+  depth: including a LogSwitch-including module elsewhere, or subclassing an includer, propagates both
+  method sets and the parent link (a subclass's parent is its superclass). (A consequence: an
+  intermediate cascading module or class that defines its own `self.included` or `self.inherited` is
+  unsupported — these redefinitions shadow it.)
 - `ClassMethods` — the config surface: `logging_enabled`, `default_log_level`, `log_class_name`,
   `logger`, `before_log`. Each reader is `read_config(ivar, reader) { default }` (see below).
 - `InstanceMethods#log(message, level = nil)` — calls the `before_log` hook, yields an optional
@@ -160,12 +163,16 @@ Three bugs the old class-variable design carried, all now fixed with regression 
 substance of the 2.0.0 config refactor): config leaked across every includer (shared `@@` slot);
 `log_class_name = false` never stuck (the `||= true` reader flipped a stored `false` back); and
 `before_log=` silently ignored every hook after the first (`@@before_block ||= block`). The readers
-no longer memoize with `||=`, so a stored `false`/`nil` is honored — note the flip side, filed as a
-follow-up: `logger = nil` now sticks and would `NoMethodError` in `#log`.
+no longer memoize with `||=`, so a stored `false`/`nil` is honored — note the flip side, documented
+as a won't-fix in README (not a code change): `logger = nil` / `default_log_level = nil` now stick
+and would `NoMethodError` in `#log`; use a real value or `reset_config!`.
 
-Two design edges of the per-includer model are tracked as open follow-ups, not bugs to fix blindly:
-a **subclass** of an includer does not inherit its config (singleton ivars aren't inherited); and
-`@includers` holds every includer by strong reference forever.
+Two design edges of the earlier per-includer model are now resolved. A **subclass** of an includer
+now inherits its config: `register_includer` runs from an `inherited` hook, setting the subclass's
+`@log_switch_parent` to its superclass, so a subclass gets the same live fall-through the module
+cascade already provides (singleton ivars still aren't copied, so the subclass's own writes shadow
+locally). And `@includers` is now an `ObjectSpace::WeakMap` rather than an Array, so includers can be
+garbage-collected instead of being retained forever.
 
 ## Conventions
 

@@ -67,7 +67,8 @@ MyThing.new.log "Stuff!", :info
 # => I, [2026-07-15T12:46:30.206499 #66434]  INFO -- : <MyThing> Stuff!
 ```
 
-The level is passed straight through to your Logger, so any method it responds to will do.
+The level is passed straight through to your Logger, so any method it responds to will do. Assign a
+real level symbol, not `nil` — see the note under [Using your own Logger](#using-your-own-logger).
 
 ### Using your own Logger
 
@@ -80,6 +81,10 @@ MyThing.new.log "hi!"
 
 `LogSwitch.logger` sets the default for includers that have not set their own, and
 `LogSwitch.reset_config!` puts things back to a fresh `STDOUT` logger.
+
+**Note:** `nil` is not a valid value for `logger=` or `default_log_level=`. Assigning `nil` stores
+it (it does not restore the default), and the next `#log` call raises `NoMethodError`. To restore
+defaults call `reset_config!`; to change them, assign a real `Logger` or a level symbol.
 
 ### Multi-line messages
 
