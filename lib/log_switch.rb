@@ -62,6 +62,7 @@ module LogSwitch
       end
     end
   end
+  private_class_method :define_cascade_hooks
 
   # Defaults to a +Logger+ writing to +$stdout+.
   def self.logger
